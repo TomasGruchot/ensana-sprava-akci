@@ -18,7 +18,9 @@ import {
   requireItProfile,
 } from "@/lib/permissions-server";
 import { dedupeGrants, parseGrantsJson } from "@/lib/permission-grants";
+import { buildAuthCallbackUrl } from "@/lib/auth-url";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { ActionState, ProfileWithAccess } from "@/types";
 
 const RoleSchema = z.enum(["ADMIN", "IT", "USER", "MANAGER", "VIEWER"]);
@@ -26,7 +28,6 @@ const RoleSchema = z.enum(["ADMIN", "IT", "USER", "MANAGER", "VIEWER"]);
 const CreateUserSchema = z.object({
   email: z.string().email("Neplatný e-mail"),
   name: z.string().min(1, "Jméno je povinné"),
-  password: z.string().min(8, "Heslo musí mít alespoň 8 znaků"),
   role: RoleSchema,
   grantsJson: z.string().optional(),
 });
@@ -140,7 +141,6 @@ export async function createUser(
   const parsed = CreateUserSchema.safeParse({
     email: formData.get("email"),
     name: formData.get("name"),
-    password: formData.get("password"),
     role: formData.get("role"),
     grantsJson: formData.get("grantsJson"),
   });
@@ -153,14 +153,13 @@ export async function createUser(
   const roleErr = validateRoleChange(actor!.role, role, actor!.id, "");
   if (roleErr) return roleErr;
 
-  const { email, name, password } = parsed.data;
+  const { email, name } = parsed.data;
   const admin = createAdminClient();
+  const redirectTo = buildAuthCallbackUrl("/nastavit-heslo");
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { name, full_name: name },
+  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo,
+    data: { name, full_name: name },
   });
 
   if (error || !data.user) {
@@ -168,7 +167,7 @@ export async function createUser(
     if (msg.includes("already") || msg.includes("registered")) {
       return { error: "Uživatel s tímto e-mailem již existuje" };
     }
-    return { error: error?.message ?? "Nepodařilo se vytvořit uživatele" };
+    return { error: error?.message ?? "Nepodařilo se odeslat pozvánku" };
   }
 
   await prisma.profile.create({
@@ -184,7 +183,31 @@ export async function createUser(
 
   revalidatePath("/it");
   revalidatePath("/uzivatele");
-  return { success: true };
+  return { success: true, message: "Pozvánka byla odeslána na e-mail" };
+}
+
+export async function sendPasswordResetEmail(profileId: string): Promise<ActionState> {
+  const check = await assertAccountManager();
+  if (isActionError(check)) return check;
+  const { actor } = check;
+
+  const target = await prisma.profile.findUnique({ where: { id: profileId } });
+  if (!target) return { error: "Uživatel nenalezen" };
+
+  if (actor!.role === Role.IT && target.role === Role.ADMIN) {
+    return { error: "U tohoto účtu nelze odeslat reset hesla" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(target.email, {
+    redirectTo: buildAuthCallbackUrl("/nastavit-heslo"),
+  });
+
+  if (error) {
+    return { error: error.message ?? "Nepodařilo se odeslat e-mail" };
+  }
+
+  return { success: true, message: "E-mail pro nastavení hesla byl odeslán" };
 }
 
 export async function updateUser(

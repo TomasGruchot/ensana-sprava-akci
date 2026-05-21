@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Plus, Shield, Trash2 } from "lucide-react";
+import { KeyRound, Loader2, Mail, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -27,11 +27,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -41,7 +42,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Role } from "@/generated/prisma/enums";
-import { createUser, deleteUser, updateUser } from "@/lib/actions/users";
+import {
+  createUser,
+  deleteUser,
+  sendPasswordResetEmail,
+  updateUser,
+} from "@/lib/actions/users";
 import type { GrantInput } from "@/lib/permission-grants";
 import { grantScopeKey, hasAnyPermission, summarizeGrants } from "@/lib/permission-grants";
 import {
@@ -104,19 +110,34 @@ function accessSummary(user: ProfileWithAccess): string {
 
 export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
   const router = useRouter();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProfileWithAccess | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, startDelete] = useTransition();
+  const [, startReset] = useTransition();
+  const [resettingId, setResettingId] = useState<string | null>(null);
 
   function openCreate() {
     setEditing(null);
-    setSheetOpen(true);
+    setDialogOpen(true);
   }
 
   function openEdit(user: ProfileWithAccess) {
     setEditing(user);
-    setSheetOpen(true);
+    setDialogOpen(true);
+  }
+
+  function handlePasswordReset(profileId: string) {
+    setResettingId(profileId);
+    startReset(async () => {
+      const result = await sendPasswordResetEmail(profileId);
+      if (result.success) {
+        toast.success(result.message ?? "E-mail byl odeslán");
+      } else {
+        toast.error(result.error ?? "Nepodařilo se odeslat e-mail");
+      }
+      setResettingId(null);
+    });
   }
 
   function handleDelete() {
@@ -168,7 +189,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                 Oprávnění
               </TableHead>
-              <TableHead className="w-24" />
+              <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -209,6 +230,21 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
                           type="button"
                           variant="ghost"
                           size="icon-sm"
+                          disabled={locked || resettingId === user.id}
+                          onClick={() => handlePasswordReset(user.id)}
+                          aria-label="Odeslat e-mail pro nastavení hesla"
+                          title="Odeslat odkaz pro nastavení / reset hesla"
+                        >
+                          {resettingId === user.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
+                          ) : (
+                            <KeyRound className="w-4 h-4 text-zinc-500" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
                           disabled={locked}
                           onClick={() => openEdit(user)}
                           aria-label="Upravit uživatele"
@@ -236,14 +272,14 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
         </Table>
       </div>
 
-      <UserFormSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+      <UserFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
         user={editing}
         hotels={hotels}
         actorRole={actor.role}
         onSuccess={() => {
-          setSheetOpen(false);
+          setDialogOpen(false);
           setEditing(null);
           router.refresh();
         }}
@@ -273,7 +309,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
   );
 }
 
-interface UserFormSheetProps {
+interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: ProfileWithAccess | null;
@@ -282,14 +318,14 @@ interface UserFormSheetProps {
   onSuccess: () => void;
 }
 
-function UserFormSheet({
+function UserFormDialog({
   open,
   onOpenChange,
   user,
   hotels,
   actorRole,
   onSuccess,
-}: UserFormSheetProps) {
+}: UserFormDialogProps) {
   const isEdit = !!user;
   const action = isEdit ? updateUser : createUser;
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -314,7 +350,9 @@ function UserFormSheet({
 
   useEffect(() => {
     if (state.success) {
-      toast.success(isEdit ? "Účet byl upraven" : "Účet byl vytvořen");
+      toast.success(
+        state.message ?? (isEdit ? "Účet byl upraven" : "Pozvánka byla odeslána na e-mail"),
+      );
       onSuccess();
     }
     if (state.error) toast.error(state.error);
@@ -386,13 +424,18 @@ function UserFormSheet({
   const hotelsWithScope = new Set(grants.map((g) => g.hotelId));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{isEdit ? "Upravit účet" : "Nový účet"}</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Upravit účet" : "Nový účet"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Změny rolí a oprávnění se projeví ihned po uložení."
+              : "Po vytvoření přijde na e-mail odkaz pro nastavení hesla a první přihlášení."}
+          </DialogDescription>
+        </DialogHeader>
 
-        <form action={formAction} className="mt-6 space-y-5 px-1">
+        <form action={formAction} className="space-y-5">
           {isEdit ? <input type="hidden" name="profileId" value={user.id} /> : null}
           <input type="hidden" name="grantsJson" value={grantsJson} />
 
@@ -423,17 +466,10 @@ function UserFormSheet({
           </div>
 
           {!isEdit ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="user-password">Heslo</Label>
-              <Input
-                id="user-password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                placeholder="Min. 8 znaků"
-              />
-            </div>
+            <p className="text-xs text-zinc-500 flex items-start gap-2 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2">
+              <Mail className="w-4 h-4 shrink-0 mt-0.5 text-sky-600" />
+              Heslo si uživatel nastaví sám po kliknutí na odkaz v e-mailu.
+            </p>
           ) : null}
 
           <div className="space-y-1.5">
@@ -535,13 +571,13 @@ function UserFormSheet({
               ) : isEdit ? (
                 "Uložit"
               ) : (
-                "Vytvořit"
+                "Vytvořit a odeslat pozvánku"
               )}
             </Button>
           </div>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

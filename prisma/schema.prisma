@@ -38,6 +38,8 @@ model Event {
   title         String
   description   String?
   date          DateTime
+  dateEnd       DateTime?
+  allDay        Boolean  @default(false)
   timeStart     String?
   timeEnd       String?
   contactPerson String?

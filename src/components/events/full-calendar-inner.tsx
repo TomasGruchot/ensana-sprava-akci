@@ -62,7 +62,6 @@ export default function FullCalendarInner({
             onEventClick(eventId);
           }}
           height="100%"
-          expandRows
           slotMinTime="06:00:00"
           slotMaxTime="23:00:00"
           eventDisplay="block"

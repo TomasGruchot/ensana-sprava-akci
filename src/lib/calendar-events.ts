@@ -1,16 +1,17 @@
-import { formatInputDate } from "@/lib/date";
+import { toCalendarRange } from "@/lib/event-schedule";
 import type { EventWithRelations, CalendarEvent } from "@/types";
 
 export function mapEventsToCalendar(events: EventWithRelations[]): CalendarEvent[] {
   return events.map((event) => {
     const hotel = event.room.hotel;
-    const dateStr = formatInputDate(event.date);
+    const range = toCalendarRange(event);
 
     return {
       id: event.id,
       title: event.title,
-      start: event.timeStart ? `${dateStr}T${event.timeStart}` : dateStr,
-      end: event.timeEnd ? `${dateStr}T${event.timeEnd}` : undefined,
+      start: range.start,
+      end: range.end,
+      allDay: range.allDay,
       backgroundColor: hotel.color,
       borderColor: hotel.color,
       extendedProps: {
@@ -23,6 +24,8 @@ export function mapEventsToCalendar(events: EventWithRelations[]): CalendarEvent
         contactPerson: event.contactPerson,
         attendees: event.attendees,
         description: event.description,
+        allDay: event.allDay,
+        dateEnd: event.dateEnd,
         timeStart: event.timeStart,
         timeEnd: event.timeEnd,
       },

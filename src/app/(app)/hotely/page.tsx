@@ -3,10 +3,13 @@ import { Plus } from "lucide-react";
 import { HotelCard } from "@/components/hotels/hotel-card";
 import { HotelForm } from "@/components/hotels/hotel-form";
 import { HotelAddButton } from "@/components/hotels/hotel-add-button";
-import { getHotelsWithRooms } from "@/lib/actions/events";
+import { getEventCountsByHotelId, getHotelsWithRooms } from "@/lib/actions/events";
 
 export default async function HotelyPage() {
-  const hotels = await getHotelsWithRooms();
+  const [hotels, eventCounts] = await Promise.all([
+    getHotelsWithRooms(),
+    getEventCountsByHotelId(),
+  ]);
 
   return (
     <>
@@ -23,7 +26,11 @@ export default async function HotelyPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {hotels.map((hotel) => (
-            <HotelCard key={hotel.id} hotel={hotel} />
+            <HotelCard
+              key={hotel.id}
+              hotel={hotel}
+              eventCount={eventCounts[hotel.id] ?? 0}
+            />
           ))}
           {hotels.length === 0 && (
             <p className="text-sm text-zinc-400 col-span-full py-8 text-center">

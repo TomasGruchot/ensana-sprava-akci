@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { formatDisplayDate } from "@/lib/date";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import { Pencil, Trash2, MoreHorizontal, Clock, Users, Phone } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,11 +75,8 @@ export function EventTable({ events }: EventTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="bg-zinc-50 hover:bg-zinc-50">
-              <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider w-32">
-                Datum
-              </TableHead>
-              <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider w-28">
-                Čas
+              <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[200px]">
+                Termín
               </TableHead>
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                 Název akce
@@ -149,21 +146,14 @@ function EventRow({
   const canUpdate = useCanModifyEvent(hotel.id, event.roomId, "update");
   const canDelete = useCanModifyEvent(hotel.id, event.roomId, "delete");
   const showActions = canUpdate || canDelete;
-  const dateLabel = formatDisplayDate(event.date);
-  const timeLabel =
-    event.timeStart
-      ? event.timeEnd
-        ? `${event.timeStart} – ${event.timeEnd}`
-        : event.timeStart
-      : "—";
+  const scheduleLabel = formatEventSchedule(event);
 
   return (
     <TableRow className="group hover:bg-zinc-50/80 transition-colors">
-      <TableCell className="text-sm text-zinc-900 font-medium">{dateLabel}</TableCell>
-      <TableCell className="text-sm text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5 text-zinc-300" />
-          {timeLabel}
+      <TableCell className="text-sm text-zinc-700">
+        <span className="flex items-center gap-1.5 whitespace-nowrap tabular-nums">
+          <Clock className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
+          {scheduleLabel}
         </span>
       </TableCell>
       <TableCell className="text-sm font-medium text-zinc-900">{event.title}</TableCell>

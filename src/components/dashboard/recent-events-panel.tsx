@@ -5,7 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { cs } from "date-fns/locale";
 import { ArrowRight, CalendarPlus, User } from "lucide-react";
 
-import { formatDisplayDate } from "@/lib/date";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import { useEventFormStore } from "@/stores/event-form-store";
 import type { EventWithRelations, Profile } from "@/types";
 
@@ -75,7 +75,7 @@ export function RecentEventsPanel({ events }: RecentEventsPanelProps) {
                     style={{ backgroundColor: hotel.color }}
                     aria-hidden
                   />
-                  <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] sm:gap-x-6 gap-y-0.5">
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-6">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-zinc-900 truncate group-hover:text-zinc-950">
                         {event.title}
@@ -84,24 +84,23 @@ export function RecentEventsPanel({ events }: RecentEventsPanelProps) {
                         {hotel.name} · {event.room.name}
                       </p>
                     </div>
-                    <p className="text-xs text-zinc-500 sm:text-right whitespace-nowrap">
-                      {formatDisplayDate(event.date)}
-                      {event.timeStart ? ` · ${event.timeStart}` : ""}
-                    </p>
-                    <p className="text-xs text-zinc-500 sm:text-right flex items-center sm:justify-end gap-1.5 whitespace-nowrap">
-                      <User className="w-3 h-3 text-zinc-400 shrink-0" />
-                      <span className="truncate max-w-[140px]">
-                        {creatorLabel(event.creator)}
+                    <p className="text-xs text-zinc-500 sm:text-right flex flex-wrap items-center sm:justify-end gap-x-1.5 gap-y-0.5 whitespace-nowrap tabular-nums shrink-0">
+                      <span>{formatEventSchedule(event)}</span>
+                      <span className="text-zinc-300" aria-hidden>
+                        ·
                       </span>
-                      <span className="text-zinc-300 hidden sm:inline">·</span>
-                      <span className="text-zinc-400 hidden sm:inline">
-                        {addedAgo}
+                      <span className="inline-flex items-center gap-1 min-w-0">
+                        <User className="w-3 h-3 text-zinc-400 shrink-0" />
+                        <span className="truncate max-w-[140px]">
+                          {creatorLabel(event.creator)}
+                        </span>
                       </span>
+                      <span className="text-zinc-300" aria-hidden>
+                        ·
+                      </span>
+                      <span className="text-zinc-400">{addedAgo}</span>
                     </p>
                   </div>
-                  <span className="text-[11px] text-zinc-400 sm:hidden shrink-0">
-                    {addedAgo}
-                  </span>
                 </button>
               </li>
             );

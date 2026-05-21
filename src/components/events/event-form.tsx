@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { CalendarDays, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -24,36 +24,33 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { DateInput } from "@/components/ui/date-input";
-import { formatInputDate } from "@/lib/date";
-import { createEvent, updateEvent } from "@/lib/actions/events";
+import { formatInputDate, toLocalDate } from "@/lib/date";
+import { isSameDay } from "date-fns";
+import { createEvent, getEventById, updateEvent } from "@/lib/actions/events";
 import { useEventFormStore } from "@/stores/event-form-store";
 import type { ActionState, EventWithRelations, HotelWithRooms } from "@/types";
 
 interface EventFormProps {
   hotels: HotelWithRooms[];
-  editEvent?: EventWithRelations | null;
 }
 
 const initialState: ActionState = {};
 
-export function EventForm({ hotels, editEvent }: EventFormProps) {
+export function EventForm({ hotels }: EventFormProps) {
   const { open, eventId, defaultRoomId, close } = useEventFormStore();
   const router = useRouter();
 
   const isEdit = !!eventId;
-  const boundAction = isEdit ? updateEvent.bind(null, eventId) : createEvent;
+  const boundAction = isEdit ? updateEvent.bind(null, eventId!) : createEvent;
 
   const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const [editEvent, setEditEvent] = useState<EventWithRelations | null>(null);
+  const [loadingEvent, setLoadingEvent] = useState(false);
 
-  const getInitialHotelId = () => {
-    if (editEvent?.room.hotelId) return editEvent.room.hotelId;
-    if (defaultRoomId) {
-      return hotels.find((h) => h.rooms.some((r: { id: string }) => r.id === defaultRoomId))?.id ?? "";
-    }
-    return "";
-  };
-
-  const [selectedHotelId, setSelectedHotelId] = useState<string>(getInitialHotelId);
+  const [selectedHotelId, setSelectedHotelId] = useState("");
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [allDay, setAllDay] = useState(false);
+  const [multiDay, setMultiDay] = useState(false);
 
   const rooms = hotels.find((h) => h.id === selectedHotelId)?.rooms ?? [];
 
@@ -79,19 +76,87 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
   }, [state, isEdit, close, router]);
 
   useEffect(() => {
-    if (open) {
-      if (editEvent) {
-        setSelectedHotelId(editEvent.room.hotelId);
-      } else if (defaultRoomId) {
-        const hotel = hotels.find((h) => h.rooms.some((r: { id: string }) => r.id === defaultRoomId));
-        setSelectedHotelId(hotel?.id ?? "");
-      } else {
-        setSelectedHotelId("");
-      }
+    if (!open) {
+      setEditEvent(null);
+      setLoadingEvent(false);
+      return;
     }
-  }, [open, editEvent, defaultRoomId, hotels]);
+
+    if (!eventId) {
+      setEditEvent(null);
+      setLoadingEvent(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingEvent(true);
+    setEditEvent(null);
+
+    getEventById(eventId)
+      .then((event) => {
+        if (cancelled) return;
+        if (!event) {
+          toast.error("Akci se nepodařilo načíst");
+          close();
+          return;
+        }
+        setEditEvent(event);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error("Chyba při načítání akce");
+          close();
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEvent(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, eventId, close]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (editEvent) {
+      setSelectedHotelId(editEvent.room.hotelId);
+      setSelectedRoomId(editEvent.roomId);
+      setAllDay(editEvent.allDay);
+      setMultiDay(
+        editEvent.dateEnd
+          ? !isSameDay(toLocalDate(editEvent.date), toLocalDate(editEvent.dateEnd))
+          : false,
+      );
+      return;
+    }
+
+    if (!eventId && defaultRoomId) {
+      const hotel = hotels.find((h) =>
+        h.rooms.some((r: { id: string }) => r.id === defaultRoomId),
+      );
+      setSelectedHotelId(hotel?.id ?? "");
+      setSelectedRoomId(defaultRoomId);
+      setAllDay(false);
+      setMultiDay(false);
+      return;
+    }
+
+    if (!eventId) {
+      setSelectedHotelId("");
+      setSelectedRoomId("");
+      setAllDay(false);
+      setMultiDay(false);
+    }
+  }, [open, editEvent, eventId, defaultRoomId, hotels]);
 
   const defaultDate = editEvent ? formatInputDate(editEvent.date) : "";
+  const defaultDateEnd =
+    editEvent?.dateEnd && multiDay ? formatInputDate(editEvent.dateEnd) : "";
+
+  const formReady = open && (!isEdit || (editEvent && !loadingEvent));
+  const formKey = isEdit ? `edit-${eventId}` : `create-${defaultRoomId ?? "new"}`;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && close()}>
@@ -102,7 +167,16 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
           </SheetTitle>
         </SheetHeader>
 
-        <form action={formAction} className="flex flex-col flex-1 overflow-auto">
+        {!formReady ? (
+          <div className="flex flex-1 items-center justify-center px-6 py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+          </div>
+        ) : (
+        <form
+          key={formKey}
+          action={formAction}
+          className="flex flex-col flex-1 overflow-auto"
+        >
           <div className="px-6 py-5 space-y-5 flex-1 overflow-y-auto">
             {/* Hotel + Room */}
             <div className="space-y-4">
@@ -115,7 +189,10 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
                 <div className="flex-1 min-w-0">
                   <Select
                     value={selectedHotelId}
-                    onValueChange={(v: string | null) => setSelectedHotelId(v ?? "")}
+                    onValueChange={(v: string | null) => {
+                      setSelectedHotelId(v ?? "");
+                      setSelectedRoomId("");
+                    }}
                     items={hotelSelectItems}
                     required
                   >
@@ -147,7 +224,8 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
                   <div className="flex-1 min-w-0">
                     <Select
                       name="roomId"
-                      defaultValue={editEvent?.roomId ?? defaultRoomId ?? ""}
+                      value={selectedRoomId}
+                      onValueChange={(v: string | null) => setSelectedRoomId(v ?? "")}
                       items={roomSelectItems}
                       required
                       disabled={!selectedHotelId}
@@ -197,42 +275,100 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
                 )}
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-sm">
-                  Datum
-                </Label>
-                <DateInput
-                  id="date"
-                  name="date"
-                  defaultValue={defaultDate}
-                  required
-                />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={allDay ? "default" : "outline"}
+                  size="sm"
+                  className={
+                    allDay
+                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : ""
+                  }
+                  onClick={() => setAllDay((v) => !v)}
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Celodenní akce
+                </Button>
+                <Button
+                  type="button"
+                  variant={multiDay ? "default" : "outline"}
+                  size="sm"
+                  className={
+                    multiDay
+                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : ""
+                  }
+                  onClick={() => setMultiDay((v) => !v)}
+                >
+                  Vícedenní akce
+                </Button>
+              </div>
+              <input type="hidden" name="allDay" value={allDay ? "true" : "false"} />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="date" className="text-sm">
+                    {multiDay ? "Datum od" : "Datum"}
+                  </Label>
+                  <DateInput
+                    id="date"
+                    name="date"
+                    defaultValue={defaultDate}
+                    required
+                  />
+                  {state.fieldErrors?.date ? (
+                    <p className="text-xs text-red-500">{state.fieldErrors.date[0]}</p>
+                  ) : null}
+                </div>
+                {multiDay ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dateEnd" className="text-sm">
+                      Datum do
+                    </Label>
+                    <DateInput
+                      id="dateEnd"
+                      name="dateEnd"
+                      defaultValue={defaultDateEnd}
+                      required
+                    />
+                    {state.fieldErrors?.dateEnd ? (
+                      <p className="text-xs text-red-500">{state.fieldErrors.dateEnd[0]}</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="timeStart" className="text-sm">
-                    Čas od
-                  </Label>
-                  <Input
-                    id="timeStart"
-                    name="timeStart"
-                    type="time"
-                    defaultValue={editEvent?.timeStart ?? ""}
-                  />
+              {!allDay ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="timeStart" className="text-sm">
+                      Čas od
+                    </Label>
+                    <Input
+                      id="timeStart"
+                      name="timeStart"
+                      type="time"
+                      defaultValue={editEvent?.timeStart ?? ""}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="timeEnd" className="text-sm">
+                      Čas do
+                    </Label>
+                    <Input
+                      id="timeEnd"
+                      name="timeEnd"
+                      type="time"
+                      defaultValue={editEvent?.timeEnd ?? ""}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="timeEnd" className="text-sm">
-                    Čas do
-                  </Label>
-                  <Input
-                    id="timeEnd"
-                    name="timeEnd"
-                    type="time"
-                    defaultValue={editEvent?.timeEnd ?? ""}
-                  />
-                </div>
-              </div>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  U celodenní akce se časy nevyplňují.
+                </p>
+              )}
             </div>
 
             <Separator />
@@ -305,6 +441,7 @@ export function EventForm({ hotels, editEvent }: EventFormProps) {
             </Button>
           </div>
         </form>
+        )}
       </SheetContent>
     </Sheet>
   );

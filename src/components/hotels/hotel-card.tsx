@@ -3,17 +3,24 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, Pencil } from "lucide-react";
+import { CalendarDays, ChevronRight, Pencil } from "lucide-react";
 
 import { useCanModifyHotel } from "@/components/layout/permissions-context";
 import { useHotelFormStore } from "@/stores/hotel-form-store";
 import type { HotelWithRooms } from "@/types";
 
-interface HotelCardProps {
-  hotel: HotelWithRooms;
+function formatEventCountLabel(count: number): string {
+  if (count === 1) return "1 akce";
+  if (count >= 2 && count <= 4) return `${count} akce`;
+  return `${count} akcí`;
 }
 
-export function HotelCard({ hotel }: HotelCardProps) {
+interface HotelCardProps {
+  hotel: HotelWithRooms;
+  eventCount: number;
+}
+
+export function HotelCard({ hotel, eventCount }: HotelCardProps) {
   const [imageError, setImageError] = useState(false);
   const showImage = hotel.imageUrl && !imageError;
   const openEdit = useHotelFormStore((s) => s.openEdit);
@@ -71,6 +78,10 @@ export function HotelCard({ hotel }: HotelCardProps) {
                 : hotel.rooms.length < 5
                   ? "místnosti"
                   : "místností"}
+            </p>
+            <p className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+              <CalendarDays className="w-3 h-3 shrink-0 text-zinc-400" />
+              Naplánováno {formatEventCountLabel(eventCount)}
             </p>
           </div>
           <ChevronRight className="w-4 h-4 text-zinc-300 shrink-0 group-hover:text-zinc-500 transition-colors" />

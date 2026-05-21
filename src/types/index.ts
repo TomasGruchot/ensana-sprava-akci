@@ -44,6 +44,7 @@ export type CalendarEvent = {
   title: string;
   start: string;
   end?: string;
+  allDay?: boolean;
   backgroundColor: string;
   borderColor: string;
   extendedProps: {
@@ -56,6 +57,8 @@ export type CalendarEvent = {
     contactPerson?: string | null;
     attendees?: number | null;
     description?: string | null;
+    allDay?: boolean;
+    dateEnd?: Date | null;
     timeStart?: string | null;
     timeEnd?: string | null;
   };
@@ -64,5 +67,6 @@ export type CalendarEvent = {
 export type ActionState = {
   success?: boolean;
   error?: string;
+  message?: string;
   fieldErrors?: Record<string, string[]>;
 };

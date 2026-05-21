@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+
+/** Aplikace vyžaduje DB a session — neprerenderovat při buildu bez DATABASE_URL. */
+export const dynamic = "force-dynamic";
 import { PermissionsProvider } from "@/components/layout/permissions-context";
 import { EventForm } from "@/components/events/event-form";
 import { getAppUser } from "@/lib/actions/auth";
