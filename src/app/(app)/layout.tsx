@@ -15,13 +15,15 @@ interface AppLayoutProps {
 }
 
 export default async function AppLayout({ children }: AppLayoutProps) {
-  const [appUser, hotels, profile] = await Promise.all([
-    getAppUser(),
+  const appUser = await getAppUser();
+  if (!appUser) redirect("/prihlasit");
+
+  const [hotels, profile] = await Promise.all([
     getHotelsWithRooms(),
     getSessionProfileWithGrants(),
   ]);
 
-  if (!appUser || !profile) redirect("/prihlasit");
+  if (!profile) redirect("/prihlasit");
 
   const capabilities = buildUserCapabilities(profile);
 
