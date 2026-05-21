@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { Role } from "@/generated/prisma/enums";
+import { buildUserCapabilities, type UserCapabilities } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import type { ActionState } from "@/types";
@@ -12,6 +13,7 @@ export type AppUser = {
   name: string;
   avatarUrl?: string;
   role: Role;
+  capabilities: UserCapabilities;
 };
 
 export async function signIn(
@@ -43,7 +45,7 @@ export async function signIn(
         id: user.id,
         email: user.email,
         name: formatNameFromEmail(user.email),
-        role: Role.VIEWER,
+        role: Role.USER,
       },
       update: {},
     });
@@ -72,7 +74,10 @@ export async function getAppUser(): Promise<AppUser | null> {
 
   const email = user.email ?? "";
   const profile = email
-    ? await prisma.profile.findUnique({ where: { id: user.id } })
+    ? await prisma.profile.findUnique({
+        where: { id: user.id },
+        include: { grants: true },
+      })
     : null;
 
   const meta = user.user_metadata ?? {};
@@ -91,7 +96,10 @@ export async function getAppUser(): Promise<AppUser | null> {
     email: profile?.email ?? email,
     name,
     avatarUrl,
-    role: profile?.role ?? Role.VIEWER,
+    role: profile?.role ?? Role.USER,
+    capabilities: buildUserCapabilities(
+      profile ?? { role: Role.USER, grants: [] },
+    ),
   };
 }
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { parseInputDate } from "@/lib/date";
+import { assertEventPermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionState } from "@/types";
@@ -41,6 +42,9 @@ export async function createEvent(
 
   const { title, roomId, date, timeStart, timeEnd, contactPerson, attendees, description } =
     parsed.data;
+
+  const allowed = await assertEventPermission("canCreateEvents", roomId);
+  if ("error" in allowed) return { error: allowed.error };
 
   const eventDate = parseEventDate(date);
   if (!eventDate) {
@@ -86,6 +90,9 @@ export async function updateEvent(
   const { title, roomId, date, timeStart, timeEnd, contactPerson, attendees, description } =
     parsed.data;
 
+  const allowed = await assertEventPermission("canUpdateEvents", roomId);
+  if ("error" in allowed) return { error: allowed.error };
+
   const eventDate = parseEventDate(date);
   if (!eventDate) {
     return { fieldErrors: { date: ["Neplatné datum"] } };
@@ -116,6 +123,15 @@ export async function deleteEvent(id: string): Promise<ActionState> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nejste přihlášeni" };
+
+  const existing = await prisma.event.findUnique({
+    where: { id },
+    select: { roomId: true },
+  });
+  if (!existing) return { error: "Akce nenalezena" };
+
+  const allowed = await assertEventPermission("canDeleteEvents", existing.roomId);
+  if ("error" in allowed) return { error: allowed.error };
 
   await prisma.event.delete({ where: { id } });
 

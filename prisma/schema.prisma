@@ -8,25 +8,27 @@ datasource db {
 }
 
 model Hotel {
-  id        String   @id @default(cuid())
-  code      String   @unique
+  id        String             @id @default(cuid())
+  code      String             @unique
   name      String
-  color     String   @default("#6366f1")
+  color     String             @default("#6366f1")
   imageUrl  String?
   rooms     Room[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  grants    PermissionGrant[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 }
 
 model Room {
-  id        String        @id @default(cuid())
+  id        String             @id @default(cuid())
   name      String
   hotelId   String
-  hotel     Hotel         @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  hotel     Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   events    Event[]
   managers  RoomManager[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  grants    PermissionGrant[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
   @@unique([hotelId, name])
 }
@@ -48,19 +50,44 @@ model Event {
 }
 
 model Profile {
-  id        String        @id
-  email     String        @unique
+  id        String             @id
+  email     String             @unique
   name      String?
-  role      Role          @default(VIEWER)
+  role      Role               @default(USER)
   managers  RoomManager[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  grants    PermissionGrant[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 }
 
 enum Role {
   ADMIN
+  IT
+  USER
   MANAGER
   VIEWER
+}
+
+/// Granulární oprávnění pro hotel nebo konkrétní místnost (roomId null = celý hotel).
+model PermissionGrant {
+  id              String   @id @default(cuid())
+  profileId       String
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  hotelId         String
+  hotel           Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomId          String?
+  room            Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  canCreateEvents Boolean  @default(false)
+  canUpdateEvents Boolean  @default(false)
+  canDeleteEvents Boolean  @default(false)
+  canCreateHotels Boolean  @default(false)
+  canUpdateHotels Boolean  @default(false)
+  canDeleteHotels Boolean  @default(false)
+  canManageUsers  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([profileId, hotelId, roomId])
 }
 
 model RoomManager {

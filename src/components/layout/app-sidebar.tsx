@@ -10,9 +10,9 @@ import {
   ChevronDown,
   Hotel,
   Plus,
-  Users,
+  Shield,
 } from "lucide-react";
-import { Role } from "@/generated/prisma/enums";
+import { hasItAccess } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppLogo } from "@/components/layout/app-logo";
@@ -103,26 +103,28 @@ export function AppSidebar({ hotels, user }: AppSidebarProps) {
       </ScrollArea>
 
       <div className="px-3 py-3 shrink-0 space-y-2">
-        <Button
-          size="lg"
-          onClick={() => openCreate()}
-          className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nová akce
-        </Button>
-        {user.role === Role.ADMIN ? (
+        {user.capabilities.canCreateEvents ? (
+          <Button
+            size="lg"
+            onClick={() => openCreate()}
+            className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nová akce
+          </Button>
+        ) : null}
+        {hasItAccess(user.role) ? (
           <Link
-            href="/uzivatele"
+            href="/it"
             className={cn(
               "flex w-full h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white text-sm font-medium transition-colors",
-              pathname === "/uzivatele"
-                ? "bg-zinc-100 text-zinc-900 border-zinc-300"
+              pathname === "/it"
+                ? "bg-sky-50 text-sky-900 border-sky-200"
                 : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
             )}
           >
-            <Users className="w-4 h-4 shrink-0" />
-            Správa uživatelů
+            <Shield className="w-4 h-4 shrink-0" />
+            IT správa účtů
           </Link>
         ) : null}
       </div>

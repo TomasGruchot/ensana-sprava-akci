@@ -53,8 +53,10 @@ interface UsersManagerProps {
 
 const initialState: ActionState = {};
 
-const ROLE_BADGE: Record<Role, string> = {
+const ROLE_BADGE: Partial<Record<Role, string>> = {
   ADMIN: "bg-primary text-primary-foreground",
+  IT: "bg-sky-600 text-white",
+  USER: "bg-zinc-100 text-zinc-700",
   MANAGER: "bg-violet-50 text-violet-700",
   VIEWER: "bg-zinc-100 text-zinc-600",
 };
@@ -155,7 +157,10 @@ export function UsersManager({ users, hotels }: UsersManagerProps) {
                   </TableCell>
                   <TableCell>
                     <Badge
-                      className={cn("border-0 font-medium", ROLE_BADGE[user.role])}
+                      className={cn(
+                        "border-0 font-medium",
+                        ROLE_BADGE[user.role] ?? ROLE_BADGE.USER,
+                      )}
                     >
                       {ROLE_LABELS[user.role]}
                     </Badge>

@@ -2,10 +2,14 @@
 
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePermissions } from "@/components/layout/permissions-context";
 import { useHotelFormStore } from "@/stores/hotel-form-store";
 
 export function HotelAddButton() {
   const openCreate = useHotelFormStore((s) => s.openCreate);
+  const { canAddHotels } = usePermissions();
+
+  if (!canAddHotels) return null;
 
   return (
     <Button

@@ -1,23 +1,38 @@
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { PermissionsProvider } from "@/components/layout/permissions-context";
 import { EventForm } from "@/components/events/event-form";
 import { getAppUser } from "@/lib/actions/auth";
 import { getHotelsWithRooms } from "@/lib/actions/events";
+import { buildUserCapabilities } from "@/lib/permissions";
+import { getSessionProfileWithGrants } from "@/lib/permissions-server";
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 export default async function AppLayout({ children }: AppLayoutProps) {
-  const [appUser, hotels] = await Promise.all([getAppUser(), getHotelsWithRooms()]);
+  const [appUser, hotels, profile] = await Promise.all([
+    getAppUser(),
+    getHotelsWithRooms(),
+    getSessionProfileWithGrants(),
+  ]);
 
-  if (!appUser) redirect("/prihlasit");
+  if (!appUser || !profile) redirect("/prihlasit");
+
+  const capabilities = buildUserCapabilities(profile);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50">
-      <AppSidebar hotels={hotels} user={appUser} />
-      <main className="flex-1 min-w-0 overflow-auto p-6">{children}</main>
-      <EventForm hotels={hotels} />
-    </div>
+    <PermissionsProvider
+      role={profile.role}
+      grants={profile.grants}
+      capabilities={capabilities}
+    >
+      <div className="flex h-screen overflow-hidden bg-zinc-50">
+        <AppSidebar hotels={hotels} user={appUser} />
+        <main className="flex-1 min-w-0 overflow-auto p-6">{children}</main>
+        <EventForm hotels={hotels} />
+      </div>
+    </PermissionsProvider>
   );
 }

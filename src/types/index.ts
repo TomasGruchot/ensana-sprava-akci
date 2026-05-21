@@ -4,10 +4,11 @@ import type {
   EventModel as Event,
   ProfileModel as Profile,
   RoomManagerModel as RoomManager,
+  PermissionGrantModel as PermissionGrant,
 } from "@/generated/prisma/models";
 import type { Role } from "@/generated/prisma/enums";
 
-export type { Hotel, Room, Event, Profile, RoomManager, Role };
+export type { Hotel, Room, Event, Profile, RoomManager, PermissionGrant, Role };
 
 export type HotelWithRooms = Hotel & {
   rooms: Room[];
@@ -27,6 +28,17 @@ export type ProfileWithManagers = Profile & {
   })[];
 };
 
+export type ProfileWithGrants = Profile & {
+  grants: PermissionGrant[];
+};
+
+export type ProfileWithAccess = Profile & {
+  grants: PermissionGrant[];
+  managers: (RoomManager & {
+    room: RoomWithHotel;
+  })[];
+};
+
 export type CalendarEvent = {
   id: string;
   title: string;
@@ -36,6 +48,8 @@ export type CalendarEvent = {
   borderColor: string;
   extendedProps: {
     eventId: string;
+    hotelId: string;
+    roomId: string;
     roomName: string;
     hotelName: string;
     hotelCode: string;

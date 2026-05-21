@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { Suspense, type ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePermissionsContext } from "@/components/layout/permissions-context";
+import { canModifyEventInScope } from "@/lib/permissions";
 import { useEventFormStore } from "@/stores/event-form-store";
 import type { CalendarEvent } from "@/types";
 import { EventCalendarScaleSwitcher } from "@/components/events/event-calendar-scale-switcher";
@@ -28,6 +30,16 @@ export function EventCalendar({
   toolbarEnd,
 }: EventCalendarProps) {
   const openEdit = useEventFormStore((s) => s.openEdit);
+  const { role, grants } = usePermissionsContext();
+
+  function handleEventClick(eventId: string) {
+    const cal = events.find((e) => e.id === eventId);
+    if (!cal) return;
+    const { hotelId, roomId } = cal.extendedProps;
+    if (canModifyEventInScope({ role, grants }, hotelId, roomId, "update")) {
+      openEdit(eventId);
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col">

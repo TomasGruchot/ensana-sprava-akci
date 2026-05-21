@@ -15,6 +15,8 @@ export function mapEventsToCalendar(events: EventWithRelations[]): CalendarEvent
       borderColor: hotel.color,
       extendedProps: {
         eventId: event.id,
+        hotelId: hotel.id,
+        roomId: event.roomId,
         roomName: event.room.name,
         hotelName: hotel.name,
         hotelCode: hotel.code,

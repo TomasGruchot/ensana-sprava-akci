@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { assertHotelPermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -117,6 +118,9 @@ export async function saveHotel(
   }
 
   if (hotelId) {
+    const allowed = await assertHotelPermission("canUpdateHotels", hotelId);
+    if ("error" in allowed) return { error: allowed.error };
+
     await prisma.hotel.update({
       where: { id: hotelId },
       data: { name, code: code.toUpperCase(), color, imageUrl: imageUrl || null },
@@ -136,6 +140,9 @@ export async function saveHotel(
       });
     }
   } else {
+    const allowed = await assertHotelPermission("canCreateHotels");
+    if ("error" in allowed) return { error: allowed.error };
+
     const hotel = await prisma.hotel.create({
       data: {
         name,
@@ -166,6 +173,9 @@ export async function deleteHotel(id: string): Promise<ActionState> {
   } catch {
     return { error: "Nejste přihlášeni" };
   }
+
+  const allowed = await assertHotelPermission("canDeleteHotels", id);
+  if ("error" in allowed) return { error: allowed.error };
 
   await prisma.hotel.delete({ where: { id } });
 

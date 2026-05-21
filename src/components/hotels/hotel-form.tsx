@@ -27,6 +27,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useCanModifyHotel } from "@/components/layout/permissions-context";
+import { usePermissions } from "@/components/layout/permissions-context";
 import { saveHotel, deleteHotel, uploadHotelImage } from "@/lib/actions/hotels";
 import { useHotelFormStore } from "@/stores/hotel-form-store";
 import type { ActionState, Room } from "@/types";
@@ -70,6 +72,10 @@ export function HotelForm() {
   const { open, hotel, close } = useHotelFormStore();
   const router = useRouter();
   const isEdit = !!hotel;
+  const { canAddHotels } = usePermissions();
+  const canUpdateHotel = useCanModifyHotel(hotel?.id ?? "", "update");
+  const canDeleteHotel = useCanModifyHotel(hotel?.id ?? "", "delete");
+  const canSave = isEdit ? canUpdateHotel : canAddHotels;
 
   const boundAction = isEdit
     ? saveHotel.bind(null, hotel.id)
@@ -177,18 +183,14 @@ export function HotelForm() {
           <SheetTitle className="text-base font-semibold">
             {isEdit ? "Upravit hotel" : "Nový hotel"}
           </SheetTitle>
-          {isEdit && (
+          {isEdit && canDeleteHotel ? (
             <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                  aria-label="Odstranit hotel"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+              <AlertDialogTrigger
+                type="button"
+                className="inline-flex size-8 items-center justify-center rounded-md text-red-500 hover:text-red-600 hover:bg-red-50"
+                aria-label="Odstranit hotel"
+              >
+                <Trash2 className="size-4" />
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -209,7 +211,7 @@ export function HotelForm() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          )}
+          ) : null}
         </SheetHeader>
 
         <form action={formAction} className="flex flex-col flex-1 overflow-auto">
@@ -455,7 +457,7 @@ export function HotelForm() {
             </Button>
             <Button
               type="submit"
-              disabled={pending || uploading}
+              disabled={pending || uploading || !canSave}
               className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {(pending || uploading) && (

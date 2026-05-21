@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCanModifyEvent } from "@/components/layout/permissions-context";
 import { deleteEvent } from "@/lib/actions/events";
 import { useEventFormStore } from "@/stores/event-form-store";
 import type { EventWithRelations } from "@/types";
@@ -145,6 +146,9 @@ function EventRow({
   onDelete: () => void;
 }) {
   const hotel = event.room.hotel;
+  const canUpdate = useCanModifyEvent(hotel.id, event.roomId, "update");
+  const canDelete = useCanModifyEvent(hotel.id, event.roomId, "delete");
+  const showActions = canUpdate || canDelete;
   const dateLabel = formatDisplayDate(event.date);
   const timeLabel =
     event.timeStart
@@ -194,25 +198,31 @@ function EventRow({
         )}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex w-8 h-8 items-center justify-center rounded-md hover:bg-zinc-100 outline-none">
-            <MoreHorizontal className="w-4 h-4 text-zinc-500" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
-              <Pencil className="w-3.5 h-3.5 mr-2" />
-              Upravit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-red-600 cursor-pointer focus:text-red-600"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-2" />
-              Smazat
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {showActions ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex w-8 h-8 items-center justify-center rounded-md hover:bg-zinc-100 outline-none">
+              <MoreHorizontal className="w-4 h-4 text-zinc-500" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {canUpdate ? (
+                <DropdownMenuItem onClick={onEdit} className="cursor-pointer">
+                  <Pencil className="w-3.5 h-3.5 mr-2" />
+                  Upravit
+                </DropdownMenuItem>
+              ) : null}
+              {canUpdate && canDelete ? <DropdownMenuSeparator /> : null}
+              {canDelete ? (
+                <DropdownMenuItem
+                  onClick={onDelete}
+                  className="text-red-600 cursor-pointer focus:text-red-600"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Smazat
+                </DropdownMenuItem>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </TableCell>
     </TableRow>
   );
