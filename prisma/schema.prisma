@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Hotel {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  color     String   @default("#6366f1")
+  imageUrl  String?
+  rooms     Room[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Room {
+  id        String        @id @default(cuid())
+  name      String
+  hotelId   String
+  hotel     Hotel         @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  events    Event[]
+  managers  RoomManager[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([hotelId, name])
+}
+
+model Event {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  date          DateTime
+  timeStart     String?
+  timeEnd       String?
+  contactPerson String?
+  attendees     Int?
+  roomId        String
+  room          Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Profile {
+  id        String        @id
+  email     String        @unique
+  name      String?
+  role      Role          @default(VIEWER)
+  managers  RoomManager[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+model RoomManager {
+  id        String   @id @default(cuid())
+  roomId    String
+  profileId String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, profileId])
+}

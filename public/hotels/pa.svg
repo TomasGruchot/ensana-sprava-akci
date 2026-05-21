@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Pacifik">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <path d="M0 380 Q200 320 400 360 T800 340 L800 600 L0 600Z" fill="#fff" opacity="0.15"/>
+  <path d="M0 420 Q250 380 400 400 T800 380 L800 600 L0 600Z" fill="#fff" opacity="0.1"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Vltava">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <path d="M0 320 C150 280 250 400 400 360 C550 320 650 400 800 340 L800 600 L0 600Z" fill="#fff" opacity="0.18"/>
+  <path d="M120 200 L680 200" stroke="#fff" stroke-width="3" opacity="0.2" stroke-linecap="round"/>
+  <rect x="360" y="160" width="80" height="200" rx="4" fill="#fff" opacity="0.12"/>
+</svg>

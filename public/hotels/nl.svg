@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Nové Lázně">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <ellipse cx="400" cy="520" rx="320" ry="40" fill="#000" opacity="0.12"/>
+  <rect x="280" y="180" width="240" height="280" rx="8" fill="#fff" opacity="0.15"/>
+  <rect x="300" y="200" width="80" height="120" rx="4" fill="#fff" opacity="0.25"/>
+  <rect x="420" y="200" width="80" height="120" rx="4" fill="#fff" opacity="0.25"/>
+</svg>

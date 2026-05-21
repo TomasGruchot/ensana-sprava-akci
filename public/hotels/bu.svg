@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Butterfly">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <path d="M400 120 C320 200 280 320 400 400 C520 320 480 200 400 120Z" fill="#fff" opacity="0.2"/>
+  <path d="M340 280 C300 340 340 420 400 440 C460 420 500 340 460 280 C430 240 370 240 340 280Z" fill="#fff" opacity="0.15"/>
+</svg>
