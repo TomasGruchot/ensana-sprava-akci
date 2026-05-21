@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 
 import { Role } from "@/generated/prisma/enums";
 import { buildUserCapabilities, type UserCapabilities } from "@/lib/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { getDatabaseUrlDiagnostics } from "@/lib/db-url";
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { ensureProfileForUser } from "@/lib/supabase/session";
 import type { ActionState } from "@/types";
 
 export type AppUser = {
@@ -39,16 +41,23 @@ export async function signIn(
   } = await supabase.auth.getUser();
 
   if (user?.email) {
-    await prisma.profile.upsert({
-      where: { id: user.id },
-      create: {
-        id: user.id,
-        email: user.email,
-        name: formatNameFromEmail(user.email),
-        role: Role.USER,
-      },
-      update: { email: user.email },
-    });
+    const dbDiag = getDatabaseUrlDiagnostics();
+    if (!dbDiag.ok) {
+      return {
+        error:
+          dbDiag.hint ??
+          "Databáze není správně nakonfigurována na serveru (Vercel → pooler :6543).",
+      };
+    }
+
+    try {
+      await ensureProfileForUser({ id: user.id, email: user.email });
+    } catch {
+      return {
+        error:
+          "Přihlášení do Supabase proběhlo, ale aplikace se nepřipojila k databázi. Na Vercelu použijte DATABASE_URL s poolerem (port 6543, ?pgbouncer=true).",
+      };
+    }
   }
 
   redirect("/");

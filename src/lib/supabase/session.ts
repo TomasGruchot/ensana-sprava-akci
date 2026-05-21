@@ -13,6 +13,23 @@ function formatNameFromEmail(email: string): string {
     .trim();
 }
 
+export async function ensureProfileForUser(user: {
+  id: string;
+  email: string;
+}): Promise<ProfileWithGrants> {
+  return prisma.profile.upsert({
+    where: { id: user.id },
+    create: {
+      id: user.id,
+      email: user.email,
+      name: formatNameFromEmail(user.email),
+      role: Role.USER,
+    },
+    update: { email: user.email },
+    include: { grants: true },
+  });
+}
+
 /** Zajistí řádek Profile pro přihlášeného Supabase uživatele (např. po prvním loginu na produkci). */
 export async function ensureSessionProfileWithGrants(): Promise<ProfileWithGrants | null> {
   const supabase = await createClient();
@@ -21,19 +38,5 @@ export async function ensureSessionProfileWithGrants(): Promise<ProfileWithGrant
   } = await supabase.auth.getUser();
   if (!user?.email) return null;
 
-  const existing = await prisma.profile.findUnique({
-    where: { id: user.id },
-    include: { grants: true },
-  });
-  if (existing) return existing;
-
-  return prisma.profile.create({
-    data: {
-      id: user.id,
-      email: user.email,
-      name: formatNameFromEmail(user.email),
-      role: Role.USER,
-    },
-    include: { grants: true },
-  });
+  return ensureProfileForUser({ id: user.id, email: user.email });
 }

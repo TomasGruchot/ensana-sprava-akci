@@ -7,8 +7,12 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getSession();
-  if (user) redirect("/");
+  try {
+    const user = await getSession();
+    if (user) redirect("/");
+  } catch {
+    /* Supabase env chybí — zobrazit přihlášení */
+  }
 
   return children;
 }

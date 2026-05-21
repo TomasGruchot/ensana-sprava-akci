@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
 
+import { getDatabaseUrlDiagnostics } from "@/lib/db-url";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  const dbDiag = getDatabaseUrlDiagnostics();
   const checks: Record<string, boolean | string> = {
     databaseUrl: Boolean(process.env.DATABASE_URL),
+    databaseUrlOk: dbDiag.ok,
+    usesPooler: dbDiag.usesPooler,
+    usesDirectPort: dbDiag.usesDirectPort,
     supabasePublic: isSupabaseConfigured(),
     serviceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
   };
+
+  if (!dbDiag.ok && dbDiag.hint) {
+    checks.databaseHint = dbDiag.hint;
+  }
 
   if (!process.env.DATABASE_URL) {
     return NextResponse.json(
@@ -43,11 +52,13 @@ export async function GET() {
     const schemaOk = checks.profileAvatarUrl && checks.eventDateEnd;
 
     return NextResponse.json({
-      ok: schemaOk,
+      ok: dbDiag.ok && schemaOk,
       checks,
-      hint: schemaOk
-        ? undefined
-        : "Spusťte npm run db:push proti produkční DATABASE_URL",
+      hint: !dbDiag.ok
+        ? dbDiag.hint
+        : schemaOk
+          ? undefined
+          : "Spusťte npm run db:push proti produkční DATABASE_URL",
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Neznámá chyba";

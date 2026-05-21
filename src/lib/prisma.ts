@@ -3,14 +3,17 @@ import "server-only";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { getDatabaseUrl, getDatabaseUrlDiagnostics } from "@/lib/db-url";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL není nastaven v .env");
+  const diag = getDatabaseUrlDiagnostics();
+  if (!diag.ok && diag.hint) {
+    throw new Error(diag.hint);
   }
+
+  const connectionString = getDatabaseUrl();
 
   const pool = new Pool({
     connectionString,
