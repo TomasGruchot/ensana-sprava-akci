@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { Role } from "@/generated/prisma/enums";
 import {
   createUser,
@@ -206,10 +207,20 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
                 return (
                   <TableRow key={user.id} className="hover:bg-zinc-50/80">
                     <TableCell>
-                      <p className="text-sm font-medium text-zinc-900">
-                        {user.name || "—"}
-                      </p>
-                      <p className="text-xs text-zinc-500">{user.email}</p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <UserAvatar
+                          name={user.name}
+                          email={user.email}
+                          avatarUrl={user.avatarUrl}
+                          size="default"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-zinc-900 truncate">
+                            {user.name || "—"}
+                          </p>
+                          <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge

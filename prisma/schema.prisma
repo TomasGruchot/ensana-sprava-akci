@@ -55,6 +55,7 @@ model Profile {
   id        String             @id
   email     String             @unique
   name      String?
+  avatarUrl String?
   role      Role               @default(USER)
   managers  RoomManager[]
   grants    PermissionGrant[]

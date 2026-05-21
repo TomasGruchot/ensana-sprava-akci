@@ -87,8 +87,9 @@ export async function getAppUser(): Promise<AppUser | null> {
       : typeof meta.name === "string"
         ? meta.name
         : null;
-  const avatarUrl =
+  const metaAvatar =
     typeof meta.avatar_url === "string" ? meta.avatar_url : undefined;
+  const avatarUrl = profile?.avatarUrl ?? metaAvatar ?? undefined;
 
   const name = profile?.name?.trim() || metaName?.trim() || formatNameFromEmail(email);
 

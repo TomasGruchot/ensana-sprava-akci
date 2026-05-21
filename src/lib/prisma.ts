@@ -11,7 +11,16 @@ function createPrismaClient(): PrismaClient {
   if (!connectionString) {
     throw new Error("DATABASE_URL není nastaven v .env");
   }
-  const pool = new Pool({ connectionString });
+
+  const pool = new Pool({
+    connectionString,
+    max: 1,
+    idleTimeoutMillis: 0,
+    connectionTimeoutMillis: 15_000,
+    ssl: connectionString.includes("supabase")
+      ? { rejectUnauthorized: false }
+      : undefined,
+  });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }

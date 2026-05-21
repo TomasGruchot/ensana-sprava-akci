@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { createUser, deleteUser, updateUser } from "@/lib/actions/users";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
@@ -150,10 +151,20 @@ export function UsersManager({ users, hotels }: UsersManagerProps) {
               users.map((user) => (
                 <TableRow key={user.id} className="hover:bg-zinc-50/80">
                   <TableCell>
-                    <p className="text-sm font-medium text-zinc-900">
-                      {user.name || "—"}
-                    </p>
-                    <p className="text-xs text-zinc-500">{user.email}</p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar
+                        name={user.name}
+                        email={user.email}
+                        avatarUrl={user.avatarUrl}
+                        size="default"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-zinc-900 truncate">
+                          {user.name || "—"}
+                        </p>
+                        <p className="text-xs text-zinc-500 truncate">{user.email}</p>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge
