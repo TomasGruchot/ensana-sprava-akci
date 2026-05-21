@@ -1,11 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import type { User } from "@supabase/supabase-js";
 
 import { getSupabaseEnv, isSupabaseConfigured } from "./env";
 
-export async function updateSession(request: NextRequest) {
+export type SessionUpdateResult = {
+  response: NextResponse;
+  user: User | null;
+};
+
+/** Obnoví auth cookies — nutné, aby je Server Components viděly stejně jako middleware. */
+export async function updateSession(request: NextRequest): Promise<SessionUpdateResult> {
   if (!isSupabaseConfigured()) {
-    return NextResponse.next({ request });
+    return { response: NextResponse.next({ request }), user: null };
   }
 
   let supabaseResponse = NextResponse.next({ request });
@@ -21,14 +28,16 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value);
         });
         supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
-        });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        );
       },
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
 }

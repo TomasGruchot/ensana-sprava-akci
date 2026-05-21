@@ -47,7 +47,7 @@ export async function signIn(
         name: formatNameFromEmail(user.email),
         role: Role.USER,
       },
-      update: {},
+      update: { email: user.email },
     });
   }
 

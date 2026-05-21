@@ -24,7 +24,9 @@ export default async function AppLayout({ children }: AppLayoutProps) {
     getSessionProfileWithGrants(),
   ]);
 
-  if (!profile) redirect("/prihlasit");
+  if (!profile) {
+    redirect("/prihlasit");
+  }
 
   const capabilities = buildUserCapabilities(profile);
 
