@@ -12,16 +12,30 @@ import {
   type ProfileWithGrants,
 } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { ensureSessionProfileWithGrants } from "@/lib/supabase/session";
+import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/types";
 
 export async function getSessionProfile(): Promise<Profile | null> {
-  const profile = await ensureSessionProfileWithGrants();
-  return profile;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  return prisma.profile.findUnique({ where: { id: user.id } });
 }
 
 export async function getSessionProfileWithGrants(): Promise<ProfileWithGrants | null> {
-  return ensureSessionProfileWithGrants();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  return prisma.profile.findUnique({
+    where: { id: user.id },
+    include: { grants: true },
+  });
 }
 
 export async function requireAdminProfile(): Promise<Profile> {
