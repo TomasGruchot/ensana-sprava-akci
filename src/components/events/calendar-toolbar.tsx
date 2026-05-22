@@ -21,8 +21,9 @@ export function CalendarToolbar({
   const api = () => calendarRef.current?.getApi();
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 shrink-0">
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-3 shrink-0">
+      {/* Navigační tlačítka */}
+      <div className="flex items-center justify-between sm:justify-start gap-2">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -59,11 +60,15 @@ export function CalendarToolbar({
         >
           Nyní
         </button>
+        {/* Scale switcher viditelný jen na mobile vpravo vedle navigace */}
+        <div className="sm:hidden flex justify-end flex-1">{end}</div>
       </div>
-      <h2 className="fc-toolbar-title text-center truncate px-2">
+      {/* Název období — na mobile plná šířka, na desktop uprostřed gridu */}
+      <h2 className="fc-toolbar-title text-center truncate px-2 order-first sm:order-0">
         {title}
       </h2>
-      <div className="flex justify-end">{end}</div>
+      {/* Scale switcher — skrytý na mobile (je nahoře vpravo), viditelný na desktop */}
+      <div className="hidden sm:flex justify-end">{end}</div>
     </div>
   );
 }

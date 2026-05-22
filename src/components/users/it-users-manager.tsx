@@ -157,7 +157,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-base font-semibold text-zinc-900 flex items-center gap-2">
             <Shield className="w-5 h-5 text-sky-600" />
@@ -170,15 +170,15 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
         </div>
         <Button
           onClick={openCreate}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 shrink-0 self-start"
         >
           <Plus className="w-4 h-4" />
           Nový účet
         </Button>
       </div>
 
-      <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
-        <Table>
+      <div className="border border-zinc-200 rounded-xl overflow-hidden overflow-x-auto bg-white">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow className="bg-zinc-50 hover:bg-zinc-50">
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">

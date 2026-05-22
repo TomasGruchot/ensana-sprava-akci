@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { AppShell } from "@/components/layout/app-shell";
 
 /** Aplikace vyžaduje DB a session — neprerenderovat při buildu bez DATABASE_URL. */
 export const dynamic = "force-dynamic";
@@ -20,10 +21,9 @@ export default async function AppLayout({ children }: AppLayoutProps) {
 
   if (!appUser) {
     return (
-      <div className="flex h-screen overflow-hidden bg-zinc-50">
-        <AppSidebar hotels={hotels} user={null} />
-        <main className="flex-1 min-w-0 overflow-auto p-6">{children}</main>
-      </div>
+      <AppShell sidebar={<AppSidebar hotels={hotels} user={null} />}>
+        {children}
+      </AppShell>
     );
   }
 
@@ -38,11 +38,10 @@ export default async function AppLayout({ children }: AppLayoutProps) {
       grants={profile.grants}
       capabilities={capabilities}
     >
-      <div className="flex h-screen overflow-hidden bg-zinc-50">
-        <AppSidebar hotels={hotels} user={appUser} />
-        <main className="flex-1 min-w-0 overflow-auto p-6">{children}</main>
+      <AppShell sidebar={<AppSidebar hotels={hotels} user={appUser} />}>
+        {children}
         <EventForm hotels={hotels} />
-      </div>
+      </AppShell>
     </PermissionsProvider>
   );
 }

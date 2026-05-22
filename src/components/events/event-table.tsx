@@ -71,8 +71,8 @@ export function EventTable({ events }: EventTableProps) {
 
   return (
     <>
-      <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
-        <Table>
+      <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white overflow-x-auto">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow className="bg-zinc-50 hover:bg-zinc-50">
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[200px]">

@@ -36,41 +36,39 @@ export default function FullCalendarInner({
   }, []);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       <CalendarToolbar
         calendarRef={calendarRef}
         title={title}
         isViewingCurrent={isViewingCurrent}
         end={toolbarEnd}
       />
-      <div className="flex min-h-0 flex-1 flex-col">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[
-            dayGridPlugin,
-            timeGridPlugin,
-            listPlugin,
-            interactionPlugin,
-          ]}
-          initialView={initialView}
-          locale={csLocale}
-          headerToolbar={false}
-          datesSet={handleDatesSet}
-          events={events}
-          eventClick={(info) => {
-            const eventId = info.event.extendedProps.eventId as string;
-            onEventClick(eventId);
-          }}
-          height="100%"
-          slotMinTime="06:00:00"
-          slotMaxTime="23:00:00"
-          eventDisplay="block"
-          dayMaxEvents={3}
-          eventMouseEnter={(info) => {
-            info.el.style.cursor = "pointer";
-          }}
-        />
-      </div>
+      <FullCalendar
+        ref={calendarRef}
+        plugins={[
+          dayGridPlugin,
+          timeGridPlugin,
+          listPlugin,
+          interactionPlugin,
+        ]}
+        initialView={initialView}
+        locale={csLocale}
+        headerToolbar={false}
+        datesSet={handleDatesSet}
+        events={events}
+        eventClick={(info) => {
+          const eventId = info.event.extendedProps.eventId as string;
+          onEventClick(eventId);
+        }}
+        height="auto"
+        slotMinTime="06:00:00"
+        slotMaxTime="23:00:00"
+        eventDisplay="block"
+        dayMaxEvents={3}
+        eventMouseEnter={(info) => {
+          info.el.style.cursor = "pointer";
+        }}
+      />
     </div>
   );
 }

@@ -29,25 +29,27 @@ export default async function AkcePage({ searchParams }: AkcePageProps) {
   const params = await searchParams;
 
   return (
-    <div className="h-full flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <Suspense fallback={null}>
         <AkceFiltersRestorer />
       </Suspense>
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h2 className="text-base font-semibold text-zinc-900">Všechny akce</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
+      <div className="flex items-center justify-between gap-3 shrink-0">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-zinc-900 truncate">Všechny akce</h2>
+          <p className="text-xs text-zinc-500 mt-0.5 hidden sm:block">
             Přehled rezervací napříč všemi hotely
           </p>
         </div>
-        <EventViewSwitcher />
+        <div className="shrink-0">
+          <EventViewSwitcher />
+        </div>
       </div>
 
       <Suspense fallback={<Skeleton className="h-12 rounded-xl" />}>
         <FiltersSection />
       </Suspense>
 
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col">
         <Suspense fallback={<TableSkeleton />}>
           <EventsSection params={params} />
         </Suspense>
@@ -85,7 +87,7 @@ async function EventsSection({
 
   if (view === "calendar") {
     return (
-      <div className="flex flex-col flex-1 min-h-0 bg-white rounded-xl border border-zinc-200 overflow-hidden p-4">
+      <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden p-4 min-h-[520px]">
         <EventCalendar
           events={mapEventsToCalendar(events)}
           initialView={calendarScaleToFcView(scale)}

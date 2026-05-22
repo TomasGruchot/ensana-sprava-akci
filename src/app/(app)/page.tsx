@@ -20,14 +20,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const scale = parseCalendarScale(scaleParam);
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Suspense fallback={<StatsSkeleton />}>
         <StatsRow />
       </Suspense>
       <Suspense fallback={<RecentEventsSkeleton />}>
         <RecentEventsSection />
       </Suspense>
-      <div className="flex-1 bg-white rounded-2xl border border-zinc-200 overflow-hidden p-4 min-h-0">
+      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden p-4 min-h-[520px]">
         <Suspense fallback={<CalendarLoading />}>
           <CalendarSection scale={scale} />
         </Suspense>
@@ -58,7 +58,7 @@ async function StatsRow() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
@@ -101,7 +101,7 @@ async function CalendarSection({
 
 function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <Skeleton key={i} className="h-[72px] rounded-2xl" />
       ))}

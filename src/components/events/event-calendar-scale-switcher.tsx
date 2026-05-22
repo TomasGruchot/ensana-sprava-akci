@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { parseCalendarScale, type CalendarScale } from "@/lib/event-view";
 
@@ -12,15 +12,48 @@ const SCALE_OPTIONS: { value: CalendarScale; label: string }[] = [
   { value: "year", label: "Rok" },
 ];
 
+const LS_KEY = "calendar-scale-v1";
+
+function saveScale(scale: CalendarScale) {
+  try {
+    localStorage.setItem(LS_KEY, scale);
+  } catch {}
+}
+
+function loadScale(): CalendarScale | null {
+  try {
+    return parseCalendarScale(localStorage.getItem(LS_KEY) ?? undefined) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function EventCalendarScaleSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
 
-  const scale = parseCalendarScale(searchParams.get("scale") ?? undefined);
+  const scaleParam = searchParams.get("scale");
+  const scale = parseCalendarScale(scaleParam ?? undefined);
+
+  // Při prvním načtení — pokud URL neobsahuje scale, načti z localStorage
+  useEffect(() => {
+    if (scaleParam) return;
+    const saved = loadScale();
+    if (!saved || saved === "month") return; // month je výchozí, není třeba přepsat URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("scale", saved);
+    if (pathname.startsWith("/akce")) {
+      params.set("view", "calendar");
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  // Záměrně spustíme jen při prvním render — deps jsou stabilní refs
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setScale(newScale: CalendarScale) {
+    saveScale(newScale);
     const params = new URLSearchParams(searchParams.toString());
     params.set("scale", newScale);
     if (pathname.startsWith("/akce")) {

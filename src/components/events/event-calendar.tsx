@@ -31,7 +31,7 @@ export function EventCalendar({
   const openDetail = useEventDetailStore((s) => s.openDetail);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col">
+    <div className="flex w-full flex-col">
       <FullCalendarComponent
         key={initialView}
         events={events}
