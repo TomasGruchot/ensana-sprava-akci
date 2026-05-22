@@ -16,13 +16,18 @@ interface AppLayoutProps {
 
 export default async function AppLayout({ children }: AppLayoutProps) {
   const appUser = await getAppUser();
-  if (!appUser) redirect("/prihlasit");
+  const hotels = await getHotelsWithRooms();
 
-  const [hotels, profile] = await Promise.all([
-    getHotelsWithRooms(),
-    getSessionProfileWithGrants(),
-  ]);
+  if (!appUser) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-zinc-50">
+        <AppSidebar hotels={hotels} user={null} />
+        <main className="flex-1 min-w-0 overflow-auto p-6">{children}</main>
+      </div>
+    );
+  }
 
+  const profile = await getSessionProfileWithGrants();
   if (!profile) redirect("/prihlasit");
 
   const capabilities = buildUserCapabilities(profile);

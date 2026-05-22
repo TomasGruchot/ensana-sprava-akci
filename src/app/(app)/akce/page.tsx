@@ -4,6 +4,7 @@ import { EventTable } from "@/components/events/event-table";
 import { EventFilters } from "@/components/events/event-filters";
 import { EventViewSwitcher } from "@/components/events/event-view-switcher";
 import { EventCalendar } from "@/components/events/event-calendar";
+import { AkceFiltersRestorer } from "@/components/events/akce-filters-restorer";
 import { getEvents, getHotelsWithRooms } from "@/lib/actions/events";
 import { mapEventsToCalendar } from "@/lib/calendar-events";
 import { parseInputDate } from "@/lib/date";
@@ -29,6 +30,9 @@ export default async function AkcePage({ searchParams }: AkcePageProps) {
 
   return (
     <div className="h-full flex flex-col gap-5">
+      <Suspense fallback={null}>
+        <AkceFiltersRestorer />
+      </Suspense>
       <div className="flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-base font-semibold text-zinc-900">Všechny akce</h2>

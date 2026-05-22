@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { LayoutList, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseEventDisplayView } from "@/lib/event-view";
+import { useAkceFiltersStore } from "@/stores/akce-filters-store";
 
 const VIEW_OPTIONS = [
   { value: "list" as const, label: "Seznam", icon: LayoutList },
@@ -16,6 +17,7 @@ export function EventViewSwitcher() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const setFilters = useAkceFiltersStore((s) => s.setFilters);
 
   const view = parseEventDisplayView(searchParams.get("view") ?? undefined);
 
@@ -24,9 +26,13 @@ export function EventViewSwitcher() {
     if (newView === "list") {
       params.delete("view");
       params.delete("scale");
+      setFilters({ view: "", scale: "" });
     } else {
       params.set("view", "calendar");
+      params.delete("from");
+      params.delete("to");
       if (!params.has("scale")) params.set("scale", "month");
+      setFilters({ view: "calendar", scale: params.get("scale") ?? "month", from: "", to: "" });
     }
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }

@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select";
 import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
+import { parseEventDisplayView } from "@/lib/event-view";
+import { useAkceFiltersStore } from "@/stores/akce-filters-store";
 import type { HotelWithRooms } from "@/types";
 
 interface EventFiltersProps {
@@ -25,11 +27,15 @@ export function EventFilters({ hotels }: EventFiltersProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const setFilters = useAkceFiltersStore((s) => s.setFilters);
+  const clearFilters = useAkceFiltersStore((s) => s.clearFilters);
 
   const hotelId = searchParams.get("hotel") ?? "";
   const roomId = searchParams.get("room") ?? "";
   const from = searchParams.get("from") ?? "";
   const to = searchParams.get("to") ?? "";
+  const isCalendarView =
+    parseEventDisplayView(searchParams.get("view") ?? undefined) === "calendar";
 
   const selectedHotel = hotels.find((h) => h.id === hotelId);
 
@@ -45,7 +51,11 @@ export function EventFilters({ hotels }: EventFiltersProps) {
         }))
       );
 
-  const hasFilters = !!(hotelId || roomId || from || to);
+  const hasFilters = !!(
+    hotelId ||
+    roomId ||
+    (!isCalendarView && (from || to))
+  );
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -55,10 +65,19 @@ export function EventFilters({ hotels }: EventFiltersProps) {
       params.delete(key);
     }
     if (key === "hotel") params.delete("room");
+    const update: Record<string, string> = {};
+    params.forEach((v, k) => { update[k] = v; });
+    setFilters({
+      hotel: params.get("hotel") ?? "",
+      room: params.get("room") ?? "",
+      from: params.get("from") ?? "",
+      to: params.get("to") ?? "",
+    });
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   function clearAll() {
+    clearFilters();
     startTransition(() => router.push(pathname));
   }
 
@@ -124,28 +143,30 @@ export function EventFilters({ hotels }: EventFiltersProps) {
         </SelectContent>
       </Select>
 
-      <div
-        className="flex items-center gap-1.5 shrink-0 rounded-lg border border-zinc-200 bg-white px-2.5 h-8"
-        role="group"
-        aria-label="Filtr podle období"
-      >
-        <span className="text-sm font-semibold text-zinc-900 shrink-0">Od</span>
-        <DateInput
-          value={from}
-          onChange={(iso) => updateParam("from", iso)}
-          aria-label="Datum od"
-          className="w-30 shrink-0"
-          inputClassName="border-0 bg-transparent px-0 py-0 h-7 shadow-none focus-visible:ring-0 text-sm text-zinc-600"
-        />
-        <span className="text-sm font-semibold text-zinc-900 shrink-0">Do</span>
-        <DateInput
-          value={to}
-          onChange={(iso) => updateParam("to", iso)}
-          aria-label="Datum do"
-          className="w-30 shrink-0"
-          inputClassName="border-0 bg-transparent px-0 py-0 h-7 shadow-none focus-visible:ring-0 text-sm text-zinc-600"
-        />
-      </div>
+      {!isCalendarView && (
+        <div
+          className="flex items-center gap-1.5 shrink-0 rounded-lg border border-zinc-200 bg-white px-2.5 h-8"
+          role="group"
+          aria-label="Filtr podle období"
+        >
+          <span className="text-sm font-semibold text-zinc-900 shrink-0">Od</span>
+          <DateInput
+            value={from}
+            onChange={(iso) => updateParam("from", iso)}
+            aria-label="Datum od"
+            className="w-30 shrink-0"
+            inputClassName="border-0 bg-transparent px-0 py-0 h-7 shadow-none focus-visible:ring-0 text-sm text-zinc-600"
+          />
+          <span className="text-sm font-semibold text-zinc-900 shrink-0">Do</span>
+          <DateInput
+            value={to}
+            onChange={(iso) => updateParam("to", iso)}
+            aria-label="Datum do"
+            className="w-30 shrink-0"
+            inputClassName="border-0 bg-transparent px-0 py-0 h-7 shadow-none focus-visible:ring-0 text-sm text-zinc-600"
+          />
+        </div>
+      )}
 
       {hasFilters && (
         <Button

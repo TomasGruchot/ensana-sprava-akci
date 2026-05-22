@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { formatEventSchedule } from "@/lib/event-schedule";
-import { Pencil, Trash2, MoreHorizontal, Clock, Users, Phone } from "lucide-react";
+import { Pencil, Trash2, MoreHorizontal, Clock, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -169,10 +169,7 @@ function EventRow({
       <TableCell className="text-sm text-zinc-600">{event.room.name}</TableCell>
       <TableCell className="text-sm text-zinc-600">
         {event.contactPerson ? (
-          <span className="flex items-center gap-1.5">
-            <Phone className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
-            {event.contactPerson}
-          </span>
+          event.contactPerson
         ) : (
           <span className="text-zinc-300">—</span>
         )}

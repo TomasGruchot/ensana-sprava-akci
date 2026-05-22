@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PATHS = ["/prihlasit", "/auth/callback", "/nastavit-heslo"];
+import { isAuthExemptPath, isPublicReadPath } from "@/lib/public-routes";
 
 export async function proxy(request: NextRequest) {
   const { NEXT_PUBLIC_SUPABASE_URL } = process.env;
@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic = isAuthExemptPath(pathname) || isPublicReadPath(pathname);
 
   // Přihlášený uživatel na login stránce → přesměruj na app
   if (user && pathname === "/prihlasit") {

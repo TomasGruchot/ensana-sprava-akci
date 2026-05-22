@@ -16,10 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ensana — Správa akcí",
   description: "Jednotný systém pro evidenci a správu akcí v hotelech Ensana",
-  icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png", type: "image/png" }],
-  },
 };
 
 export default function RootLayout({

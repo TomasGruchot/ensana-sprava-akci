@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronDown,
   Hotel,
+  LogIn,
   Plus,
   Shield,
 } from "lucide-react";
@@ -24,7 +25,7 @@ import type { HotelWithRooms } from "@/types";
 
 interface AppSidebarProps {
   hotels: HotelWithRooms[];
-  user: AppUser;
+  user: AppUser | null;
 }
 
 const NAV_ITEMS = [
@@ -39,7 +40,7 @@ export function AppSidebar({ hotels, user }: AppSidebarProps) {
   const [hotelsOpen, setHotelsOpen] = useState(true);
 
   return (
-    <aside className="w-64 shrink-0 border-r border-zinc-200 bg-white flex flex-col h-full">
+    <aside className="w-64 shrink-0 border-r border-zinc-200 bg-white flex flex-col h-full overflow-hidden">
       <div className="flex items-center gap-1.5 px-4 h-14 border-b border-zinc-200 shrink-0">
         <div className="flex size-8 shrink-0 items-center justify-center">
           <AppLogo size="sm" className="max-h-8 max-w-8" />
@@ -49,7 +50,7 @@ export function AppSidebar({ hotels, user }: AppSidebarProps) {
         </h1>
       </div>
 
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 min-h-0 px-3 py-4">
         {/* Main nav */}
         <nav className="space-y-0.5 mb-6">
           {NAV_ITEMS.map((item) => {
@@ -102,34 +103,51 @@ export function AppSidebar({ hotels, user }: AppSidebarProps) {
         </div>
       </ScrollArea>
 
-      <div className="px-3 py-3 shrink-0 space-y-2">
-        {user.capabilities.canCreateEvents ? (
-          <Button
-            size="lg"
-            onClick={() => openCreate()}
-            className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Nová akce
-          </Button>
-        ) : null}
-        {hasItAccess(user.role) ? (
+      {user ? (
+        <div className="px-3 py-3 shrink-0 space-y-2 border-t border-zinc-200 bg-white">
+          {user.capabilities.canCreateEvents ? (
+            <Button
+              size="lg"
+              onClick={() => openCreate()}
+              className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Nová akce
+            </Button>
+          ) : null}
+          {hasItAccess(user.role) ? (
+            <Link
+              href="/it"
+              className={cn(
+                "flex w-full h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white text-sm font-medium transition-colors",
+                pathname === "/it"
+                  ? "bg-sky-50 text-sky-900 border-sky-200"
+                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
+              )}
+            >
+              <Shield className="w-4 h-4 shrink-0" />
+              IT správa účtů
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+
+      {user ? (
+        <SidebarUser user={user} />
+      ) : (
+        <div className="px-4 py-4 shrink-0 border-t border-zinc-200">
           <Link
-            href="/it"
+            href="/prihlasit"
             className={cn(
-              "flex w-full h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white text-sm font-medium transition-colors",
-              pathname === "/it"
-                ? "bg-sky-50 text-sky-900 border-sky-200"
-                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
+              "flex w-full h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white text-sm font-medium text-zinc-700 transition-colors",
+              "hover:bg-zinc-50 hover:text-zinc-900",
             )}
           >
-            <Shield className="w-4 h-4 shrink-0" />
-            IT správa účtů
+            <LogIn className="w-4 h-4 shrink-0" />
+            Přihlásit se
           </Link>
-        ) : null}
-      </div>
-
-      <SidebarUser user={user} />
+        </div>
+      )}
     </aside>
   );
 }
@@ -149,9 +167,8 @@ function HotelNavItem({
   const activeRoomId = searchParams?.get("room");
 
   const isHotelActive = activeHotelId === hotel.id && !activeRoomId;
-  const hasActiveRoom = hotel.rooms.some((r) => r.id === activeRoomId);
 
-  const [open, setOpen] = useState(hasActiveRoom);
+  const [open, setOpen] = useState(true);
 
   return (
     <div>
