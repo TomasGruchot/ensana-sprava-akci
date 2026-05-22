@@ -13,10 +13,20 @@ function parseEventDate(value: string): Date | null {
   return parseInputDate(value);
 }
 
+function parseRoomIds(formData: FormData): string[] {
+  return [
+    ...new Set(
+      formData
+        .getAll("roomIds")
+        .filter((v): v is string => typeof v === "string" && v.length > 0),
+    ),
+  ];
+}
+
 const EventSchema = z
   .object({
     title: z.string().min(1, "Název akce je povinný"),
-    roomId: z.string().min(1, "Místnost je povinná"),
+    roomIds: z.array(z.string().min(1)).min(1, "Vyberte alespoň jednu místnost"),
     date: z.string().min(1, "Datum je povinné"),
     dateEnd: z.string().optional(),
     allDay: z.string().optional(),
@@ -75,6 +85,17 @@ function parseEventDates(
   return { start, end };
 }
 
+export async function saveEvent(
+  prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const id = formData.get("eventId") as string | null;
+  if (id) {
+    return updateEvent(id, prev, formData);
+  }
+  return createEvent(prev, formData);
+}
+
 export async function createEvent(
   _prev: ActionState,
   formData: FormData,
@@ -85,7 +106,10 @@ export async function createEvent(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nejste přihlášeni" };
 
-  const raw = Object.fromEntries(formData);
+  const raw = {
+    ...Object.fromEntries(formData),
+    roomIds: parseRoomIds(formData),
+  };
   const parsed = EventSchema.safeParse(raw);
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
@@ -93,7 +117,7 @@ export async function createEvent(
 
   const {
     title,
-    roomId,
+    roomIds,
     date,
     dateEnd,
     allDay: allDayRaw,
@@ -104,8 +128,10 @@ export async function createEvent(
     description,
   } = parsed.data;
 
-  const allowed = await assertEventPermission("canCreateEvents", roomId);
-  if ("error" in allowed) return { error: allowed.error };
+  for (const roomId of roomIds) {
+    const allowed = await assertEventPermission("canCreateEvents", roomId);
+    if ("error" in allowed) return { error: allowed.error };
+  }
 
   const dates = parseEventDates(date, dateEnd);
   if (!dates) {
@@ -115,25 +141,30 @@ export async function createEvent(
   const allDay = parseAllDay(allDayRaw);
   const times = normalizeEventTimes(allDay, timeStart, timeEnd);
 
-  await prisma.event.create({
-    data: {
-      title,
-      roomId,
-      date: dates.start,
-      dateEnd: dates.end,
-      allDay,
-      timeStart: times.timeStart,
-      timeEnd: times.timeEnd,
-      contactPerson: contactPerson || null,
-      attendees: attendees ? parseInt(attendees) : null,
-      description: description || null,
-      createdBy: user.id,
-    },
-  });
+  const eventData = {
+    title,
+    date: dates.start,
+    dateEnd: dates.end,
+    allDay,
+    timeStart: times.timeStart,
+    timeEnd: times.timeEnd,
+    contactPerson: contactPerson || null,
+    attendees: attendees ? parseInt(attendees) : null,
+    description: description || null,
+    createdBy: user.id,
+  };
+
+  await prisma.$transaction(
+    roomIds.map((roomId) =>
+      prisma.event.create({
+        data: { ...eventData, roomId },
+      }),
+    ),
+  );
 
   revalidatePath("/");
   revalidatePath("/akce");
-  return { success: true };
+  return { success: true, createdCount: roomIds.length };
 }
 
 export async function updateEvent(
@@ -147,7 +178,16 @@ export async function updateEvent(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Nejste přihlášeni" };
 
-  const raw = Object.fromEntries(formData);
+  const existing = await prisma.event.findUnique({
+    where: { id },
+    select: { roomId: true },
+  });
+  if (!existing) return { error: "Akce nenalezena" };
+
+  const raw = {
+    ...Object.fromEntries(formData),
+    roomIds: parseRoomIds(formData),
+  };
   const parsed = EventSchema.safeParse(raw);
   if (!parsed.success) {
     return { fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]> };
@@ -155,7 +195,7 @@ export async function updateEvent(
 
   const {
     title,
-    roomId,
+    roomIds,
     date,
     dateEnd,
     allDay: allDayRaw,
@@ -166,8 +206,16 @@ export async function updateEvent(
     description,
   } = parsed.data;
 
-  const allowed = await assertEventPermission("canUpdateEvents", roomId);
-  if ("error" in allowed) return { error: allowed.error };
+  const primaryRoomId = roomIds.includes(existing.roomId)
+    ? existing.roomId
+    : roomIds[0];
+  const extraRoomIds = roomIds.filter((rid) => rid !== primaryRoomId);
+
+  for (const roomId of [primaryRoomId, ...extraRoomIds]) {
+    const key = roomId === primaryRoomId ? "canUpdateEvents" : "canCreateEvents";
+    const allowed = await assertEventPermission(key, roomId);
+    if ("error" in allowed) return { error: allowed.error };
+  }
 
   const dates = parseEventDates(date, dateEnd);
   if (!dates) {
@@ -177,25 +225,40 @@ export async function updateEvent(
   const allDay = parseAllDay(allDayRaw);
   const times = normalizeEventTimes(allDay, timeStart, timeEnd);
 
-  await prisma.event.update({
-    where: { id },
-    data: {
-      title,
-      roomId,
-      date: dates.start,
-      dateEnd: dates.end,
-      allDay,
-      timeStart: times.timeStart,
-      timeEnd: times.timeEnd,
-      contactPerson: contactPerson || null,
-      attendees: attendees ? parseInt(attendees) : null,
-      description: description || null,
-    },
-  });
+  const eventData = {
+    title,
+    date: dates.start,
+    dateEnd: dates.end,
+    allDay,
+    timeStart: times.timeStart,
+    timeEnd: times.timeEnd,
+    contactPerson: contactPerson || null,
+    attendees: attendees ? parseInt(attendees) : null,
+    description: description || null,
+  };
+
+  await prisma.$transaction([
+    prisma.event.update({
+      where: { id },
+      data: { ...eventData, roomId: primaryRoomId },
+    }),
+    ...extraRoomIds.map((roomId) =>
+      prisma.event.create({
+        data: {
+          ...eventData,
+          roomId,
+          createdBy: user.id,
+        },
+      }),
+    ),
+  ]);
 
   revalidatePath("/");
   revalidatePath("/akce");
-  return { success: true };
+  return {
+    success: true,
+    createdCount: extraRoomIds.length > 0 ? extraRoomIds.length : undefined,
+  };
 }
 
 export async function deleteEvent(id: string): Promise<ActionState> {

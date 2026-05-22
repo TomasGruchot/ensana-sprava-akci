@@ -26,8 +26,8 @@ export function RecentEventsPanel({ events }: RecentEventsPanelProps) {
   const openEdit = useEventFormStore((s) => s.openEdit);
 
   return (
-    <section className="shrink-0 bg-white rounded-2xl border border-zinc-200 p-4">
-      <div className="flex items-center justify-between gap-4 mb-3">
+    <section className="shrink-0 flex flex-col min-h-0 bg-white rounded-2xl border border-zinc-200 p-4">
+      <div className="flex items-center justify-between gap-4 mb-3 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center shrink-0">
             <CalendarPlus className="w-4 h-4 text-zinc-500" />
@@ -55,7 +55,8 @@ export function RecentEventsPanel({ events }: RecentEventsPanelProps) {
           Zatím nebyla přidána žádná akce.
         </p>
       ) : (
-        <ul className="divide-y divide-zinc-100">
+        <div className="min-h-0 max-h-56 overflow-y-auto overscroll-contain -mx-1 px-1">
+          <ul className="divide-y divide-zinc-100">
           {events.map((event) => {
             const hotel = event.room.hotel;
             const addedAgo = formatDistanceToNow(event.createdAt, {
@@ -105,7 +106,8 @@ export function RecentEventsPanel({ events }: RecentEventsPanelProps) {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </div>
       )}
     </section>
   );

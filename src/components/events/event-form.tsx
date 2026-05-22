@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -9,13 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { MultiSelectField } from "@/components/ui/multi-select-field";
 import {
   Sheet,
   SheetContent,
@@ -26,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { DateInput } from "@/components/ui/date-input";
 import { formatInputDate, toLocalDate } from "@/lib/date";
 import { isSameDay } from "date-fns";
-import { createEvent, getEventById, updateEvent } from "@/lib/actions/events";
+import { getEventById, saveEvent } from "@/lib/actions/events";
 import { useEventFormStore } from "@/stores/event-form-store";
 import type { ActionState, EventWithRelations, HotelWithRooms } from "@/types";
 
@@ -41,36 +35,60 @@ export function EventForm({ hotels }: EventFormProps) {
   const router = useRouter();
 
   const isEdit = !!eventId;
-  const boundAction = isEdit ? updateEvent.bind(null, eventId!) : createEvent;
 
-  const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const [state, formAction, pending] = useActionState(saveEvent, initialState);
+  const lastHandledStateRef = useRef<ActionState>(initialState);
   const [editEvent, setEditEvent] = useState<EventWithRelations | null>(null);
   const [loadingEvent, setLoadingEvent] = useState(false);
 
-  const [selectedHotelId, setSelectedHotelId] = useState("");
-  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [selectedHotelIds, setSelectedHotelIds] = useState<string[]>([]);
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([]);
   const [allDay, setAllDay] = useState(false);
   const [multiDay, setMultiDay] = useState(false);
 
-  const rooms = hotels.find((h) => h.id === selectedHotelId)?.rooms ?? [];
+  const activeHotels =
+    selectedHotelIds.length > 0
+      ? hotels.filter((h) => selectedHotelIds.includes(h.id))
+      : hotels;
 
-  const hotelSelectItems = hotels.map((h) => ({
-    value: h.id,
-    label: h.name,
-  }));
-
-  const roomSelectItems = rooms.map((r: { id: string; name: string }) => ({
-    value: r.id,
-    label: r.name,
+  const roomGroups = activeHotels.map((h) => ({
+    label: (
+      <span className="flex items-center gap-2 normal-case tracking-normal">
+        <span
+          className="w-2 h-2 rounded-full inline-block shrink-0"
+          style={{ backgroundColor: h.color }}
+        />
+        {h.name}
+      </span>
+    ),
+    items: h.rooms.map((r: { id: string; name: string }) => ({
+      value: r.id,
+      label: r.name,
+    })),
   }));
 
   useEffect(() => {
+    if (state === lastHandledStateRef.current) return;
+    lastHandledStateRef.current = state;
+
     if (state.success) {
-      toast.success(isEdit ? "Akce byla upravena" : "Akce byla vytvořena");
+      const count = state.createdCount;
+      if (isEdit) {
+        toast.success(
+          count && count > 0
+            ? `Akce upravena, vytvořeno ${count} dalších`
+            : "Akce byla upravena",
+        );
+      } else {
+        toast.success(
+          count && count > 1
+            ? `Vytvořeno ${count} akcí`
+            : "Akce byla vytvořena",
+        );
+      }
       close();
       router.refresh();
-    }
-    if (state.error) {
+    } else if (state.error) {
       toast.error(state.error);
     }
   }, [state, isEdit, close, router]);
@@ -121,8 +139,8 @@ export function EventForm({ hotels }: EventFormProps) {
     if (!open) return;
 
     if (editEvent) {
-      setSelectedHotelId(editEvent.room.hotelId);
-      setSelectedRoomId(editEvent.roomId);
+      setSelectedHotelIds([editEvent.room.hotelId]);
+      setSelectedRoomIds([editEvent.roomId]);
       setAllDay(editEvent.allDay);
       setMultiDay(
         editEvent.dateEnd
@@ -136,16 +154,16 @@ export function EventForm({ hotels }: EventFormProps) {
       const hotel = hotels.find((h) =>
         h.rooms.some((r: { id: string }) => r.id === defaultRoomId),
       );
-      setSelectedHotelId(hotel?.id ?? "");
-      setSelectedRoomId(defaultRoomId);
+      setSelectedHotelIds(hotel ? [hotel.id] : []);
+      setSelectedRoomIds([defaultRoomId]);
       setAllDay(false);
       setMultiDay(false);
       return;
     }
 
     if (!eventId) {
-      setSelectedHotelId("");
-      setSelectedRoomId("");
+      setSelectedHotelIds([]);
+      setSelectedRoomIds([]);
       setAllDay(false);
       setMultiDay(false);
     }
@@ -177,6 +195,7 @@ export function EventForm({ hotels }: EventFormProps) {
           action={formAction}
           className="flex flex-col flex-1 overflow-auto"
         >
+          {eventId && <input type="hidden" name="eventId" value={eventId} />}
           <div className="px-6 py-5 space-y-5 flex-1 overflow-y-auto">
             {/* Hotel + Room */}
             <div className="space-y-4">
@@ -187,65 +206,81 @@ export function EventForm({ hotels }: EventFormProps) {
               <div className="flex items-center gap-3">
                 <Label className="text-sm shrink-0 w-24">Hotel</Label>
                 <div className="flex-1 min-w-0">
-                  <Select
-                    value={selectedHotelId}
-                    onValueChange={(v: string | null) => {
-                      setSelectedHotelId(v ?? "");
-                      setSelectedRoomId("");
+                  <MultiSelectField
+                    placeholder="Vyberte hotel…"
+                    value={selectedHotelIds}
+                    onChange={(ids) => {
+                      setSelectedHotelIds(ids);
+                      if (ids.length > 0) {
+                        const allowed = new Set(
+                          hotels
+                            .filter((h) => ids.includes(h.id))
+                            .flatMap((h) => h.rooms.map((r: { id: string }) => r.id)),
+                        );
+                        setSelectedRoomIds((prev) =>
+                          prev.filter((id) => allowed.has(id)),
+                        );
+                      }
                     }}
-                    items={hotelSelectItems}
                     required
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Vyberte hotel…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hotels.map((h) => (
-                        <SelectItem key={h.id} value={h.id}>
-                          <span className="flex items-center gap-2">
-                            <span
-                              className="w-2 h-2 rounded-full inline-block"
-                              style={{ backgroundColor: h.color }}
-                            />
-                            {h.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    items={hotels.map((h) => ({
+                      value: h.id,
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="w-2 h-2 rounded-full inline-block shrink-0"
+                            style={{ backgroundColor: h.color }}
+                          />
+                          {h.name}
+                        </span>
+                      ),
+                    }))}
+                    summary={(selected) => (
+                      <span className="truncate">
+                        {selected.length === 1
+                          ? selected[0].label
+                          : `${selected.length} hotely`}
+                      </span>
+                    )}
+                  />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <Label htmlFor="roomId" className="text-sm shrink-0 w-24">
+                  <Label htmlFor="roomIds" className="text-sm shrink-0 w-24">
                     Místnost
                   </Label>
                   <div className="flex-1 min-w-0">
-                    <Select
-                      name="roomId"
-                      value={selectedRoomId}
-                      onValueChange={(v: string | null) => setSelectedRoomId(v ?? "")}
-                      items={roomSelectItems}
+                    {selectedRoomIds.map((roomId) => (
+                      <input
+                        key={roomId}
+                        type="hidden"
+                        name="roomIds"
+                        value={roomId}
+                      />
+                    ))}
+                    <MultiSelectField
+                      id="roomIds"
+                      placeholder="Vyberte místnost…"
+                      value={selectedRoomIds}
+                      onChange={setSelectedRoomIds}
+                      groups={roomGroups}
                       required
-                      disabled={!selectedHotelId}
-                    >
-                      <SelectTrigger id="roomId" className="w-full">
-                        <SelectValue placeholder="Vyberte místnost…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rooms.map((r: { id: string; name: string }) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            {r.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      disabled={activeHotels.every((h) => h.rooms.length === 0)}
+                      summary={(selected) => (
+                        <span className="truncate">
+                          {selected.length === 1
+                            ? selected[0].label
+                            : `${selected.length} místnosti`}
+                        </span>
+                      )}
+                    />
                   </div>
                 </div>
-                {state.fieldErrors?.roomId && (
+                {state.fieldErrors?.roomIds && (
                   <p className="text-xs text-red-500 pl-27">
-                    {state.fieldErrors.roomId[0]}
+                    {state.fieldErrors.roomIds[0]}
                   </p>
                 )}
               </div>

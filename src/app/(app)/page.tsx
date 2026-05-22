@@ -111,14 +111,16 @@ function StatsSkeleton() {
 
 function RecentEventsSkeleton() {
   return (
-    <div className="shrink-0 bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-      <div className="flex justify-between">
+    <div className="shrink-0 flex flex-col min-h-0 bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
+      <div className="flex justify-between shrink-0">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-24" />
       </div>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Skeleton key={i} className="h-10 w-full rounded-lg" />
-      ))}
+      <div className="min-h-0 max-h-56 overflow-hidden space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-lg shrink-0" />
+        ))}
+      </div>
     </div>
   );
 }

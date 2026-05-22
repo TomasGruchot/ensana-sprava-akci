@@ -7,9 +7,16 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import csLocale from "@fullcalendar/core/locales/cs";
-import type { DatesSetArg } from "@fullcalendar/core";
-import type { CalendarEvent } from "@/types";
+import type { DatesSetArg, EventContentArg } from "@fullcalendar/core";
 import { CalendarToolbar } from "./calendar-toolbar";
+
+function renderEventContent(arg: EventContentArg) {
+  return (
+    <span className="block truncate text-[11px] font-medium leading-tight px-1">
+      {arg.event.title}
+    </span>
+  );
+}
 
 interface FullCalendarInnerProps {
   events: CalendarEvent[];
@@ -64,6 +71,7 @@ export default function FullCalendarInner({
         slotMinTime="06:00:00"
         slotMaxTime="23:00:00"
         eventDisplay="block"
+        eventContent={renderEventContent}
         dayMaxEvents={3}
         eventMouseEnter={(info) => {
           info.el.style.cursor = "pointer";
