@@ -9,6 +9,8 @@ import interactionPlugin from "@fullcalendar/interaction";
 import csLocale from "@fullcalendar/core/locales/cs";
 import type { DatesSetArg, EventContentArg } from "@fullcalendar/core";
 import { CalendarToolbar } from "./calendar-toolbar";
+import { formatInputDate } from "@/lib/date";
+import { useCalendarStateStore } from "@/stores/calendar-state-store";
 import type { CalendarEvent } from "@/types";
 
 function renderEventContent(arg: EventContentArg) {
@@ -60,6 +62,35 @@ function eventTooltipTitle(title: string, roomName?: string, hotelName?: string)
   return place ? `${title} — ${place}` : title;
 }
 
+function startOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function endOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function hasEventEnded(event: { start?: Date | null; end?: Date | null; allDay: boolean }) {
+  if (!event.start) return false;
+
+  const now = new Date();
+  if (event.end) {
+    return event.end <= now;
+  }
+
+  return event.allDay ? addDays(startOfDay(event.start), 1) <= now : endOfDay(event.start) < now;
+}
+
 interface FullCalendarInnerProps {
   events: CalendarEvent[];
   initialView: string;
@@ -76,13 +107,20 @@ export default function FullCalendarInner({
   const calendarRef = useRef<FullCalendar>(null);
   const [title, setTitle] = useState("");
   const [isViewingCurrent, setIsViewingCurrent] = useState(false);
+  const setReferenceDate = useCalendarStateStore((s) => s.setReferenceDate);
 
-  const handleDatesSet = useCallback((arg: DatesSetArg) => {
-    setTitle(arg.view.title);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    setIsViewingCurrent(today >= arg.start && today < arg.end);
-  }, []);
+  const handleDatesSet = useCallback(
+    (arg: DatesSetArg) => {
+      setTitle(arg.view.title);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      setIsViewingCurrent(today >= arg.start && today < arg.end);
+      // Uložíme aktuální datum (currentStart respektuje navigaci, ne týdenní okraje)
+      const ref = arg.view.currentStart ?? arg.start;
+      setReferenceDate(formatInputDate(ref));
+    },
+    [setReferenceDate],
+  );
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -115,6 +153,15 @@ export default function FullCalendarInner({
         eventDisplay="block"
         eventContent={renderEventContent}
         dayMaxEvents={3}
+        eventClassNames={(arg) =>
+          hasEventEnded({
+            start: arg.event.start,
+            end: arg.event.end,
+            allDay: arg.event.allDay,
+          })
+            ? ["calendar-event--past"]
+            : []
+        }
         eventDidMount={(info) => {
           const { roomName, hotelName } = info.event.extendedProps as CalendarEvent["extendedProps"];
           info.el.title = eventTooltipTitle(

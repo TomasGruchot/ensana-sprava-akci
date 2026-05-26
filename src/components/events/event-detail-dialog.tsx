@@ -1,7 +1,17 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { Building2, Clock, MapPin, Pencil, Users, User } from "lucide-react";
+import {
+  Building2,
+  Clock,
+  Download,
+  MapPin,
+  Paperclip,
+  Pencil,
+  Phone,
+  Users,
+  User,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +28,13 @@ import type { CalendarEvent } from "@/types";
 
 interface EventDetailDialogProps {
   events: CalendarEvent[];
+}
+
+function formatAttachmentSize(size?: number | null) {
+  if (!size) return null;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function toScheduleFields(cal: CalendarEvent) {
@@ -102,8 +119,13 @@ export function EventDetailDialog({ events }: EventDetailDialogProps) {
                 {props?.roomName}
               </DetailRow>
               {props?.contactPerson ? (
-                <DetailRow icon={User} label="Kontaktní osoba">
+                <DetailRow icon={User} label="Jméno">
                   {props.contactPerson}
+                </DetailRow>
+              ) : null}
+              {props?.contactInfo ? (
+                <DetailRow icon={Phone} label="Kontakt">
+                  {props.contactInfo}
                 </DetailRow>
               ) : null}
               {props?.attendees != null ? (
@@ -119,6 +141,38 @@ export function EventDetailDialog({ events }: EventDetailDialogProps) {
                   <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">
                     {props.description}
                   </p>
+                </div>
+              ) : null}
+              {props?.attachmentUrl ? (
+                <div className="pt-1">
+                  <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                    Příloha
+                  </p>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 py-3">
+                    <div className="flex items-start gap-2">
+                      <Paperclip className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-zinc-900 break-all">
+                          {props.attachmentName ?? "Příloha"}
+                        </p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          {props.attachmentMimeType || "Neznámý typ"}
+                          {props.attachmentSize
+                            ? ` • ${formatAttachmentSize(props.attachmentSize)}`
+                            : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={props.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+                    >
+                      <Download className="w-4 h-4" />
+                      Otevřít přílohu
+                    </a>
+                  </div>
                 </div>
               ) : null}
             </div>

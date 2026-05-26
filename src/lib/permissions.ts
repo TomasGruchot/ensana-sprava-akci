@@ -2,7 +2,7 @@ import { Role } from "@/generated/prisma/enums";
 import type { PermissionGrant, Profile } from "@/types";
 
 export const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: "Hlavní administrátor",
+  ADMIN: "Admin",
   IT: "IT správa",
   USER: "Uživatel",
   MANAGER: "Správce místností",
@@ -39,8 +39,9 @@ export type ProfileWithGrants = Profile & {
   grants: PermissionGrant[];
 };
 
+/** IT správa má plný přístup ke všemu. ADMIN má granulární oprávnění dle grantů. */
 export function isMainAdmin(role: Role): boolean {
-  return role === Role.ADMIN;
+  return role === Role.IT;
 }
 
 export function isItStaff(role: Role): boolean {
@@ -48,25 +49,25 @@ export function isItStaff(role: Role): boolean {
 }
 
 export function hasItAccess(role: Role): boolean {
-  return role === Role.ADMIN || role === Role.IT;
+  return role === Role.IT;
 }
 
 export function hasFullDataAccess(role: Role): boolean {
-  return hasItAccess(role);
+  return role === Role.IT;
 }
 
 export function canManageAllAccounts(role: Role): boolean {
-  return hasItAccess(role);
+  return role === Role.IT;
 }
 
 export function canAssignRole(actorRole: Role, targetRole: Role): boolean {
-  if (actorRole === Role.ADMIN) return true;
-  if (actorRole === Role.IT) return targetRole !== Role.ADMIN;
+  if (actorRole === Role.IT) return true;
   return false;
 }
 
-export function canGrantCreateHotels(actorRole: Role): boolean {
-  return actorRole === Role.ADMIN;
+/** Přidávání hotelů je vyhrazeno pro IT správu, nelze delegovat přes grant. */
+export function canGrantCreateHotels(_actorRole: Role): boolean {
+  return false;
 }
 
 function mergeFlags(a: PermissionFlags, b: PermissionFlags): PermissionFlags {
@@ -110,7 +111,6 @@ export function hasPermission(
   scope?: { hotelId: string; roomId?: string | null },
 ): boolean {
   if (hasFullDataAccess(profile.role)) {
-    if (key === "canCreateHotels") return isMainAdmin(profile.role);
     return true;
   }
 
@@ -126,9 +126,9 @@ export function canReadAll(): boolean {
   return true;
 }
 
-/** Migrace starých rolí MANAGER/VIEWER na USER + granty z RoomManager. */
+/** Migrace starých rolí USER/MANAGER/VIEWER na ADMIN. */
 export function normalizeRole(role: Role): Role {
-  if (role === Role.MANAGER || role === Role.VIEWER) return Role.USER;
+  if (role === Role.USER || role === Role.MANAGER || role === Role.VIEWER) return Role.ADMIN;
   return role;
 }
 
@@ -147,8 +147,8 @@ export function buildUserCapabilities(
 ): UserCapabilities {
   if (hasFullDataAccess(profile.role)) {
     return {
-      canManageAccounts: canManageAllAccounts(profile.role),
-      canAddHotels: isMainAdmin(profile.role),
+      canManageAccounts: true,
+      canAddHotels: true,
       canCreateEvents: true,
       canUpdateEvents: true,
       canDeleteEvents: true,

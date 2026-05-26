@@ -55,8 +55,13 @@ export type CalendarEvent = {
     hotelName: string;
     hotelCode: string;
     contactPerson?: string | null;
+    contactInfo?: string | null;
     attendees?: number | null;
     description?: string | null;
+    attachmentName?: string | null;
+    attachmentUrl?: string | null;
+    attachmentMimeType?: string | null;
+    attachmentSize?: number | null;
     allDay?: boolean;
     dateEnd?: Date | null;
     timeStart?: string | null;

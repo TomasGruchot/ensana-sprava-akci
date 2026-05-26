@@ -94,7 +94,7 @@ export async function assertHotelPermission(
 
   if (key === "canCreateHotels") {
     if (isMainAdmin(profile.role)) return { profile };
-    return { error: "Přidávat hotely může pouze hlavní administrátor" };
+    return { error: "Přidávat hotely může pouze IT správa" };
   }
 
   if (!hotelId) return { error: "Hotel nenalezen" };

@@ -50,7 +50,7 @@ import {
   updateUser,
 } from "@/lib/actions/users";
 import type { GrantInput } from "@/lib/permission-grants";
-import { grantScopeKey, hasAnyPermission, summarizeGrants } from "@/lib/permission-grants";
+import { grantScopeKey, summarizeGrants } from "@/lib/permission-grants";
 import {
   EMPTY_PERMISSIONS,
   PERMISSION_KEYS,
@@ -76,12 +76,18 @@ interface ItUsersManagerProps {
 const initialState: ActionState = {};
 
 const ROLE_BADGE: Partial<Record<Role, string>> = {
-  ADMIN: "bg-primary text-primary-foreground",
   IT: "bg-sky-600 text-white",
-  USER: "bg-zinc-100 text-zinc-700",
-  MANAGER: "bg-violet-50 text-violet-700",
+  ADMIN: "bg-violet-100 text-violet-800",
+  USER: "bg-zinc-100 text-zinc-600",
+  MANAGER: "bg-zinc-100 text-zinc-600",
   VIEWER: "bg-zinc-100 text-zinc-600",
 };
+
+function parseGrantScopeValue(value: string): { hotelId: string; roomId: string | null } | null {
+  const [hotelId, roomId = ""] = value.split("::");
+  if (!hotelId) return null;
+  return { hotelId, roomId: roomId || null };
+}
 
 function profileToGrantInputs(user: ProfileWithAccess): GrantInput[] {
   if (user.grants.length > 0) {
@@ -104,8 +110,7 @@ function profileToGrantInputs(user: ProfileWithAccess): GrantInput[] {
 }
 
 function accessSummary(user: ProfileWithAccess): string {
-  if (user.role === Role.ADMIN) return "Plný přístup · přidávání hotelů";
-  if (user.role === Role.IT) return "IT · správa všech účtů";
+  if (user.role === Role.IT) return "IT správa · plný přístup ke všemu";
   return summarizeGrants(user.grants);
 }
 
@@ -202,8 +207,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
               </TableRow>
             ) : (
               users.map((user) => {
-                const locked =
-                  actor.role === Role.IT && user.role === Role.ADMIN;
+                const locked = user.id === actor.id;
                 return (
                   <TableRow key={user.id} className="hover:bg-zinc-50/80">
                     <TableCell>
@@ -266,7 +270,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
                           type="button"
                           variant="ghost"
                           size="icon-sm"
-                          disabled={locked || user.id === actor.id}
+                          disabled={locked}
                           onClick={() => setDeleteId(user.id)}
                           aria-label="Smazat uživatele"
                           className="text-zinc-500 hover:text-red-600 hover:bg-red-50"
@@ -342,21 +346,22 @@ function UserFormDialog({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   const assignableRoles = useMemo(() => {
-    const roles: Role[] = [Role.USER, Role.IT];
-    if (isMainAdmin(actorRole)) roles.unshift(Role.ADMIN);
+    const roles: Role[] = [Role.ADMIN, Role.IT];
     return roles.filter((r) => canAssignRole(actorRole, r));
   }, [actorRole]);
 
-  const [role, setRole] = useState<Role>(Role.USER);
+  const [role, setRole] = useState<Role>(Role.ADMIN);
   const [grants, setGrants] = useState<GrantInput[]>([]);
   const [addHotelId, setAddHotelId] = useState("");
+  const [addRoomScopeValue, setAddRoomScopeValue] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    const r = user ? normalizeRole(user.role) : Role.USER;
+    const r = user ? normalizeRole(user.role) : Role.ADMIN;
     setRole(r);
     setGrants(user ? profileToGrantInputs(user) : []);
     setAddHotelId("");
+    setAddRoomScopeValue("");
   }, [open, user]);
 
   useEffect(() => {
@@ -369,7 +374,7 @@ function UserFormDialog({
     if (state.error) toast.error(state.error);
   }, [state, isEdit, onSuccess]);
 
-  const showGrants = role === Role.USER;
+  const showGrants = role === Role.ADMIN;
   const grantsJson = JSON.stringify(grants);
   const allowCreateHotelsFlag = canGrantCreateHotels(actorRole);
 
@@ -421,6 +426,18 @@ function UserFormDialog({
     setAddHotelId("");
   }
 
+  function addRoomScope() {
+    if (!addRoomScopeValue) return;
+    const scope = parseGrantScopeValue(addRoomScopeValue);
+    if (!scope?.roomId) return;
+    if (getGrant(scope.hotelId, scope.roomId)) {
+      toast.message("Přístup k této místnosti už existuje");
+      return;
+    }
+    upsertGrant(scope.hotelId, scope.roomId, { ...EMPTY_PERMISSIONS });
+    setAddRoomScopeValue("");
+  }
+
   function removeScope(hotelId: string, roomId: string | null) {
     const key = grantScopeKey(hotelId, roomId);
     setGrants((prev) => prev.filter((g) => grantScopeKey(g.hotelId, g.roomId) !== key));
@@ -432,7 +449,27 @@ function UserFormDialog({
   }));
 
   const hotelScopes = grants.filter((g) => g.roomId === null);
-  const hotelsWithScope = new Set(grants.map((g) => g.hotelId));
+  const hotelsWithAnyScope = new Set(grants.map((g) => g.hotelId));
+  const hotelsWithHotelScope = new Set(hotelScopes.map((g) => g.hotelId));
+  const roomScopeKeys = new Set(
+    grants
+      .filter((g) => g.roomId !== null)
+      .map((g) => grantScopeKey(g.hotelId, g.roomId)),
+  );
+  const addHotelItems = hotels
+    .filter((hotel) => !hotelsWithHotelScope.has(hotel.id))
+    .map((hotel) => ({
+      value: hotel.id,
+      label: hotel.name,
+    }));
+  const addRoomItems = hotels.flatMap((hotel) =>
+    hotel.rooms
+      .filter((room) => !roomScopeKeys.has(grantScopeKey(hotel.id, room.id)))
+      .map((room) => ({
+        value: grantScopeKey(hotel.id, room.id),
+        label: `${hotel.name} · ${room.name}`,
+      })),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -504,13 +541,14 @@ function UserFormDialog({
             </Select>
             {role === Role.IT ? (
               <p className="text-xs text-zinc-500">
-                IT má přístup na tuto stránku a může spravovat všechny účty. Přidávat nové hotely
-                může pouze hlavní administrátor.
+                IT správa má plný přístup ke všemu — přidávání hotelů, správa všech účtů
+                a úpravy libovolné místnosti bez omezení.
               </p>
             ) : null}
             {role === Role.ADMIN ? (
               <p className="text-xs text-zinc-500">
-                Hlavní administrátor má plný přístup včetně zakládání hotelů.
+                Admin vidí vše jako čtenář a má pouze ta oprávnění, která mu explicitně přiřadíte
+                níže — buď pro celý hotel, nebo jen pro konkrétní místnosti.
               </p>
             ) : null}
           </div>
@@ -520,27 +558,52 @@ function UserFormDialog({
               <div>
                 <Label>Oprávnění po hotelech / místnostech</Label>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Bez zaškrtnutého přístupu vidí uživatel všechny hotely jen jako čtenář.
+                  Přiřaďte přístup pro celý hotel nebo jen konkrétní místnosti. Bez přiřazeného
+                  oprávnění má admin všechny hotely pouze ke čtení.
                 </p>
               </div>
 
               <div className="flex gap-2">
-                <Select value={addHotelId} onValueChange={(v) => v && setAddHotelId(v)}>
+                <Select
+                  value={addHotelId}
+                  onValueChange={(v) => v && setAddHotelId(v)}
+                  items={addHotelItems}
+                >
                   <SelectTrigger className="flex-1 bg-white">
                     <SelectValue placeholder="Přidat hotel…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {hotels
-                      .filter((h) => !hotelsWithScope.has(h.id))
-                      .map((h) => (
-                        <SelectItem key={h.id} value={h.id}>
-                          {h.name}
-                        </SelectItem>
-                      ))}
+                    {addHotelItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" onClick={addHotelScope}>
-                  Přidat
+                  Přidat hotel
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Select
+                  value={addRoomScopeValue}
+                  onValueChange={(v) => v && setAddRoomScopeValue(v)}
+                  items={addRoomItems}
+                >
+                  <SelectTrigger className="flex-1 bg-white">
+                    <SelectValue placeholder="Přidat konkrétní místnost…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {addRoomItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" onClick={addRoomScope}>
+                  Přidat místnost
                 </Button>
               </div>
 
@@ -552,7 +615,7 @@ function UserFormDialog({
                 ) : null}
 
                 {hotels
-                  .filter((h) => hotelsWithScope.has(h.id))
+                  .filter((h) => hotelsWithAnyScope.has(h.id))
                   .map((hotel) => (
                     <PermissionScopeBlock
                       key={hotel.id}
@@ -626,16 +689,20 @@ function PermissionScopeBlock({
         style={{ borderLeftWidth: 4, borderLeftColor: hotel.color }}
       >
         <span className="text-sm font-semibold text-zinc-800 flex-1">{hotel.name}</span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="text-zinc-400 hover:text-red-600"
-          onClick={() => onRemoveScope(hotel.id, null)}
-          aria-label="Odebrat hotel"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
+        {hotelGrant ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="text-zinc-400 hover:text-red-600"
+            onClick={() => onRemoveScope(hotel.id, null)}
+            aria-label="Odebrat hotel"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        ) : roomGrants.length > 0 ? (
+          <span className="text-[11px] font-medium text-zinc-500">Jen místnosti</span>
+        ) : null}
       </div>
 
       <div className="p-3 space-y-3">
@@ -662,7 +729,7 @@ function PermissionScopeBlock({
             </p>
             {hotel.rooms.map((room) => {
               const rg = getGrant(hotel.id, room.id);
-              const active = !!rg && hasAnyPermission(rg);
+              const active = !!rg;
               return (
                 <div
                   key={room.id}

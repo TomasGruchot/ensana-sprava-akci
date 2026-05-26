@@ -21,6 +21,7 @@ import { dedupeGrants, parseGrantsJson } from "@/lib/permission-grants";
 import { buildAuthCallbackUrl } from "@/lib/auth-url";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 import type { ActionState, ProfileWithAccess } from "@/types";
 
 const RoleSchema = z.enum(["ADMIN", "IT", "USER", "MANAGER", "VIEWER"]);
@@ -65,7 +66,7 @@ async function syncPermissionGrants(
   await prisma.permissionGrant.deleteMany({ where: { profileId } });
 
   const normalized = normalizeRole(role);
-  if (normalized === Role.ADMIN || normalized === Role.IT) return;
+  if (normalized === Role.IT) return;
 
   let grants = parseGrantsJson(grantsJson);
   if (grants.length === 0 && legacyManagers?.length) {
@@ -82,8 +83,36 @@ async function syncPermissionGrants(
 
   if (deduped.length === 0) return;
 
+  const hotelIds = [...new Set(deduped.map((g) => g.hotelId))];
+  const roomIds = [
+    ...new Set(deduped.map((g) => g.roomId).filter((roomId): roomId is string => !!roomId)),
+  ];
+
+  const [existingHotels, existingRooms] = await Promise.all([
+    prisma.hotel.findMany({
+      where: { id: { in: hotelIds } },
+      select: { id: true },
+    }),
+    roomIds.length > 0
+      ? prisma.room.findMany({
+          where: { id: { in: roomIds } },
+          select: { id: true, hotelId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const validHotelIds = new Set(existingHotels.map((hotel) => hotel.id));
+  const roomHotelById = new Map(existingRooms.map((room) => [room.id, room.hotelId]));
+  const sanitized = deduped.filter((grant) => {
+    if (!validHotelIds.has(grant.hotelId)) return false;
+    if (!grant.roomId) return true;
+    return roomHotelById.get(grant.roomId) === grant.hotelId;
+  });
+
+  if (sanitized.length === 0) return;
+
   await prisma.permissionGrant.createMany({
-    data: deduped.map((g) => ({
+    data: sanitized.map((g) => ({
       profileId,
       hotelId: g.hotelId,
       roomId: g.roomId,
@@ -109,9 +138,6 @@ function validateRoleChange(
   }
   if (actorId === targetId && targetRole !== actorRole && actorRole === Role.ADMIN) {
     return { error: "Nemůžete si odebrat roli hlavního administrátora" };
-  }
-  if (actorRole === Role.IT && targetRole === Role.ADMIN) {
-    return { error: "Roli hlavního administrátora může přiřadit pouze hlavní administrátor" };
   }
   return null;
 }
@@ -181,6 +207,17 @@ export async function createUser(
 
   await syncPermissionGrants(data.user.id, role, parsed.data.grantsJson);
 
+  await logAudit({
+    actorId: actor!.id,
+    actorEmail: actor!.email,
+    actorName: actor!.name ?? null,
+    action: "USER_CREATE",
+    entityType: "user",
+    entityId: data.user.id,
+    entityLabel: `${name} (${email})`,
+    after: { email, name, role },
+  });
+
   revalidatePath("/it");
   revalidatePath("/uzivatele");
   return { success: true, message: "Pozvánka byla odeslána na e-mail" };
@@ -194,10 +231,6 @@ export async function sendPasswordResetEmail(profileId: string): Promise<ActionS
   const target = await prisma.profile.findUnique({ where: { id: profileId } });
   if (!target) return { error: "Uživatel nenalezen" };
 
-  if (actor!.role === Role.IT && target.role === Role.ADMIN) {
-    return { error: "U tohoto účtu nelze odeslat reset hesla" };
-  }
-
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(target.email, {
     redirectTo: buildAuthCallbackUrl("/nastavit-heslo"),
@@ -206,6 +239,17 @@ export async function sendPasswordResetEmail(profileId: string): Promise<ActionS
   if (error) {
     return { error: error.message ?? "Nepodařilo se odeslat e-mail" };
   }
+
+  await logAudit({
+    actorId: actor!.id,
+    actorEmail: actor!.email,
+    actorName: actor!.name ?? null,
+    action: "PASSWORD_RESET",
+    entityType: "user",
+    entityId: target.id,
+    entityLabel: target.name ? `${target.name} (${target.email})` : target.email,
+    metadata: { targetEmail: target.email },
+  });
 
   return { success: true, message: "E-mail pro nastavení hesla byl odeslán" };
 }
@@ -238,10 +282,6 @@ export async function updateUser(
   const roleErr = validateRoleChange(actor!.role, role, actor!.id, profileId);
   if (roleErr) return roleErr;
 
-  if (actor!.role === Role.IT && target.role === Role.ADMIN) {
-    return { error: "Účet hlavního administrátora nemůže upravit IT role" };
-  }
-
   await prisma.profile.update({
     where: { id: profileId },
     data: { name, role },
@@ -253,6 +293,18 @@ export async function updateUser(
   });
 
   await syncPermissionGrants(profileId, role, parsed.data.grantsJson);
+
+  await logAudit({
+    actorId: actor!.id,
+    actorEmail: actor!.email,
+    actorName: actor!.name ?? null,
+    action: "USER_UPDATE",
+    entityType: "user",
+    entityId: profileId,
+    entityLabel: target.name ? `${target.name} (${target.email})` : target.email,
+    before: { name: target.name, role: target.role, email: target.email },
+    after: { name, role, email: target.email },
+  });
 
   revalidatePath("/it");
   revalidatePath("/uzivatele");
@@ -271,10 +323,6 @@ export async function deleteUser(profileId: string): Promise<ActionState> {
   const target = await prisma.profile.findUnique({ where: { id: profileId } });
   if (!target) return { error: "Uživatel nenalezen" };
 
-  if (actor!.role === Role.IT && target.role === Role.ADMIN) {
-    return { error: "Účet hlavního administrátora nelze smazat" };
-  }
-
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(profileId);
   if (error) {
@@ -282,6 +330,17 @@ export async function deleteUser(profileId: string): Promise<ActionState> {
   }
 
   await prisma.profile.delete({ where: { id: profileId } });
+
+  await logAudit({
+    actorId: actor!.id,
+    actorEmail: actor!.email,
+    actorName: actor!.name ?? null,
+    action: "USER_DELETE",
+    entityType: "user",
+    entityId: profileId,
+    entityLabel: target.name ? `${target.name} (${target.email})` : target.email,
+    before: { name: target.name, role: target.role, email: target.email },
+  });
 
   revalidatePath("/it");
   revalidatePath("/uzivatele");

@@ -93,7 +93,7 @@ export function HotelCard({ hotel, eventCount }: HotelCardProps) {
           type="button"
           onClick={() => openEdit(hotel)}
           aria-label={`Upravit hotel ${hotel.name}`}
-          className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm rounded-lg px-2 py-1 flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900"
+          className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm rounded-lg px-2 py-1 flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900"
         >
           <Pencil className="size-3" />
           Upravit

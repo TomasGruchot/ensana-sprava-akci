@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Loader2 } from "lucide-react";
+import { CalendarDays, Loader2, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,13 @@ interface EventFormProps {
 }
 
 const initialState: ActionState = {};
+
+function formatAttachmentSize(size?: number | null) {
+  if (!size) return null;
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function EventForm({ hotels }: EventFormProps) {
   const { open, eventId, defaultRoomId, close } = useEventFormStore();
@@ -193,6 +200,7 @@ export function EventForm({ hotels }: EventFormProps) {
         <form
           key={formKey}
           action={formAction}
+          encType="multipart/form-data"
           className="flex flex-col flex-1 overflow-auto"
         >
           {eventId && <input type="hidden" name="eventId" value={eventId} />}
@@ -416,13 +424,25 @@ export function EventForm({ hotels }: EventFormProps) {
 
               <div className="space-y-1.5">
                 <Label htmlFor="contactPerson" className="text-sm">
-                  Kontaktní osoba
+                  Jméno
                 </Label>
                 <Input
                   id="contactPerson"
                   name="contactPerson"
                   defaultValue={editEvent?.contactPerson ?? ""}
                   placeholder="Jméno a příjmení"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="contactInfo" className="text-sm">
+                  Kontakt
+                </Label>
+                <Input
+                  id="contactInfo"
+                  name="contactInfo"
+                  defaultValue={editEvent?.contactInfo ?? ""}
+                  placeholder="Telefon nebo e-mail"
                 />
               </div>
 
@@ -452,6 +472,65 @@ export function EventForm({ hotels }: EventFormProps) {
                   rows={3}
                   className="resize-none"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="attachment" className="text-sm">
+                  Příloha
+                </Label>
+                <Input
+                  id="attachment"
+                  name="attachment"
+                  type="file"
+                />
+                <p className="text-xs text-zinc-500">
+                  Můžete přiložit libovolný soubor, například PDF, ZIP nebo DOCX.
+                  Maximální velikost je 25 MB.
+                </p>
+                {editEvent?.attachmentUrl ? (
+                  <p className="text-xs text-zinc-500">
+                    Pokud vyberete nový soubor, po uložení nahradí stávající přílohu.
+                  </p>
+                ) : null}
+
+                {editEvent?.attachmentUrl ? (
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-50/70 px-3 py-2 space-y-2">
+                    <div className="flex items-start gap-2 text-sm text-zinc-700">
+                      <Paperclip className="w-4 h-4 shrink-0 mt-0.5 text-zinc-400" />
+                      <div className="min-w-0">
+                        <a
+                          href={editEvent.attachmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-primary hover:underline break-all"
+                        >
+                          {editEvent.attachmentName ?? "Stávající příloha"}
+                        </a>
+                        {editEvent.attachmentSize ? (
+                          <p className="text-xs text-zinc-500 mt-0.5">
+                            {formatAttachmentSize(editEvent.attachmentSize)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs text-zinc-600">
+                      <input
+                        type="checkbox"
+                        name="removeAttachment"
+                        value="true"
+                        className="h-4 w-4 rounded border-zinc-300"
+                      />
+                      Odebrat stávající přílohu při uložení
+                    </label>
+                  </div>
+                ) : null}
+
+                {state.fieldErrors?.attachment ? (
+                  <p className="text-xs text-red-500">
+                    {state.fieldErrors.attachment[0]}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

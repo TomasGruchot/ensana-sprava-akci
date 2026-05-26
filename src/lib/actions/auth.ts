@@ -45,7 +45,7 @@ export async function signIn(
         id: user.id,
         email: user.email,
         name: formatNameFromEmail(user.email),
-        role: Role.USER,
+        role: Role.ADMIN,
       },
       update: {},
     });
@@ -97,9 +97,9 @@ export async function getAppUser(): Promise<AppUser | null> {
     email: profile?.email ?? email,
     name,
     avatarUrl,
-    role: profile?.role ?? Role.USER,
+    role: profile?.role ?? Role.ADMIN,
     capabilities: buildUserCapabilities(
-      profile ?? { role: Role.USER, grants: [] },
+      profile ?? { role: Role.ADMIN, grants: [] },
     ),
   };
 }

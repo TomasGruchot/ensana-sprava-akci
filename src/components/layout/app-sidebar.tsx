@@ -30,7 +30,7 @@ interface AppSidebarProps {
 
 const NAV_ITEMS = [
   { href: "/", label: "Přehled", icon: LayoutDashboard },
-  { href: "/hotely", label: "Přehled hotelů", icon: Hotel },
+  { href: "/hotely", label: "Hotely a místnosti", icon: Hotel },
   { href: "/akce", label: "Všechny akce", icon: CalendarDays },
 ];
 
@@ -223,8 +223,8 @@ function HotelNavItem({
                 )}
               >
                 <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0 opacity-60"
-                  style={{ backgroundColor: hotel.color }}
+                  className="w-1.5 h-1.5 rounded-full shrink-0 opacity-70"
+                  style={{ backgroundColor: room.color ?? hotel.color }}
                 />
                 <span className="truncate">{room.name}</span>
               </Link>

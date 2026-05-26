@@ -130,6 +130,15 @@
   filter: brightness(0.92);
 }
 
+.fc-event.calendar-event--past {
+  opacity: 0.72;
+  filter: saturate(0.8);
+}
+
+.fc-event.calendar-event--past:hover {
+  filter: saturate(0.8) brightness(0.9);
+}
+
 .fc-daygrid-more-link {
   font-size: 0.75rem;
   color: #71717a;

@@ -72,7 +72,7 @@ export function EventTable({ events }: EventTableProps) {
   return (
     <>
       <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white overflow-x-auto">
-        <Table className="min-w-[640px]">
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow className="bg-zinc-50 hover:bg-zinc-50">
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[200px]">
@@ -88,6 +88,9 @@ export function EventTable({ events }: EventTableProps) {
                 Místnost
               </TableHead>
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider w-36">
+                Jméno
+              </TableHead>
+              <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider w-40">
                 Kontakt
               </TableHead>
               <TableHead className="text-xs font-semibold text-zinc-500 uppercase tracking-wider w-20 text-center">
@@ -170,6 +173,13 @@ function EventRow({
       <TableCell className="text-sm text-zinc-600">
         {event.contactPerson ? (
           event.contactPerson
+        ) : (
+          <span className="text-zinc-300">—</span>
+        )}
+      </TableCell>
+      <TableCell className="text-sm text-zinc-600">
+        {event.contactInfo ? (
+          event.contactInfo
         ) : (
           <span className="text-zinc-300">—</span>
         )}

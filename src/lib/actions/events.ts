@@ -6,7 +6,9 @@ import { z } from "zod";
 import { parseInputDate } from "@/lib/date";
 import { assertEventPermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getActorInfo, logAudit } from "@/lib/audit";
 import type { ActionState } from "@/types";
 
 function parseEventDate(value: string): Date | null {
@@ -23,6 +25,111 @@ function parseRoomIds(formData: FormData): string[] {
   ];
 }
 
+const ATTACHMENT_BUCKET = "event-attachments";
+const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
+
+type UploadedAttachment = {
+  name: string;
+  path: string;
+  url: string;
+  mimeType: string | null;
+  size: number;
+};
+
+async function ensureAttachmentBucket() {
+  const admin = createAdminClient();
+  const { data: buckets } = await admin.storage.listBuckets();
+  if (!buckets?.some((bucket) => bucket.name === ATTACHMENT_BUCKET)) {
+    await admin.storage.createBucket(ATTACHMENT_BUCKET, { public: true });
+  }
+}
+
+function getAttachmentFile(formData: FormData): File | null {
+  const value = formData.get("attachment");
+  return value instanceof File && value.size > 0 ? value : null;
+}
+
+function parseRemoveAttachment(value: FormDataEntryValue | null): boolean {
+  return value === "true" || value === "on";
+}
+
+function sanitizeAttachmentName(name: string): string {
+  return (
+    name
+      .normalize("NFKD")
+      .replace(/[^\x00-\x7F]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "soubor"
+  );
+}
+
+function toAttachmentFields(attachment: UploadedAttachment | null) {
+  return {
+    attachmentName: attachment?.name ?? null,
+    attachmentPath: attachment?.path ?? null,
+    attachmentUrl: attachment?.url ?? null,
+    attachmentMimeType: attachment?.mimeType ?? null,
+    attachmentSize: attachment?.size ?? null,
+  };
+}
+
+async function uploadEventAttachment(
+  file: File,
+  userId: string,
+): Promise<{ data?: UploadedAttachment; error?: string }> {
+  if (file.size > MAX_ATTACHMENT_SIZE) {
+    return { error: "Příloha může mít maximálně 25 MB" };
+  }
+
+  try {
+    await ensureAttachmentBucket();
+  } catch {
+    /* bucket mohl být již vytvořen */
+  }
+
+  const admin = createAdminClient();
+  const safeName = sanitizeAttachmentName(file.name || "soubor");
+  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error } = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, buffer, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+
+  if (error) return { error: error.message };
+
+  const {
+    data: { publicUrl },
+  } = admin.storage.from(ATTACHMENT_BUCKET).getPublicUrl(path);
+
+  return {
+    data: {
+      name: file.name || safeName,
+      path,
+      url: publicUrl,
+      mimeType: file.type || null,
+      size: file.size,
+    },
+  };
+}
+
+async function cleanupUploadedAttachment(path: string) {
+  const admin = createAdminClient();
+  await admin.storage.from(ATTACHMENT_BUCKET).remove([path]);
+}
+
+async function removeAttachmentIfUnused(path: string) {
+  const usageCount = await prisma.event.count({
+    where: { attachmentPath: path },
+  });
+  if (usageCount > 0) return;
+
+  const admin = createAdminClient();
+  await admin.storage.from(ATTACHMENT_BUCKET).remove([path]);
+}
+
 const EventSchema = z
   .object({
     title: z.string().min(1, "Název akce je povinný"),
@@ -33,6 +140,7 @@ const EventSchema = z
     timeStart: z.string().optional(),
     timeEnd: z.string().optional(),
     contactPerson: z.string().optional(),
+    contactInfo: z.string().optional(),
     attendees: z.string().optional(),
     description: z.string().optional(),
   })
@@ -124,9 +232,11 @@ export async function createEvent(
     timeStart,
     timeEnd,
     contactPerson,
+    contactInfo,
     attendees,
     description,
   } = parsed.data;
+  const attachmentFile = getAttachmentFile(formData);
 
   for (const roomId of roomIds) {
     const allowed = await assertEventPermission("canCreateEvents", roomId);
@@ -140,6 +250,15 @@ export async function createEvent(
 
   const allDay = parseAllDay(allDayRaw);
   const times = normalizeEventTimes(allDay, timeStart, timeEnd);
+  let uploadedAttachment: UploadedAttachment | null = null;
+
+  if (attachmentFile) {
+    const uploadResult = await uploadEventAttachment(attachmentFile, user.id);
+    if (uploadResult.error) {
+      return { fieldErrors: { attachment: [uploadResult.error] } };
+    }
+    uploadedAttachment = uploadResult.data ?? null;
+  }
 
   const eventData = {
     title,
@@ -149,18 +268,61 @@ export async function createEvent(
     timeStart: times.timeStart,
     timeEnd: times.timeEnd,
     contactPerson: contactPerson || null,
+    contactInfo: contactInfo || null,
     attendees: attendees ? parseInt(attendees) : null,
     description: description || null,
+    ...toAttachmentFields(uploadedAttachment),
     createdBy: user.id,
   };
 
-  await prisma.$transaction(
-    roomIds.map((roomId) =>
-      prisma.event.create({
-        data: { ...eventData, roomId },
-      }),
-    ),
-  );
+  const created = await (async () => {
+    try {
+      return await prisma.$transaction(
+        roomIds.map((roomId) =>
+          prisma.event.create({
+            data: { ...eventData, roomId },
+            include: { room: { include: { hotel: true } } },
+          }),
+        ),
+      );
+    } catch (error) {
+      if (uploadedAttachment?.path) {
+        await cleanupUploadedAttachment(uploadedAttachment.path);
+      }
+      throw error;
+    }
+  })();
+
+  const actor = await getActorInfo(user.id);
+  for (const ev of created) {
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      actorName: actor.name,
+      action: "EVENT_CREATE",
+      entityType: "event",
+      entityId: ev.id,
+      entityLabel: ev.title,
+      after: {
+        title: ev.title,
+        date: ev.date.toISOString(),
+        dateEnd: ev.dateEnd?.toISOString() ?? null,
+        allDay: ev.allDay,
+        timeStart: ev.timeStart,
+        timeEnd: ev.timeEnd,
+        contactPerson: ev.contactPerson,
+        contactInfo: ev.contactInfo,
+        attendees: ev.attendees,
+        description: ev.description,
+        attachmentName: ev.attachmentName,
+        attachmentUrl: ev.attachmentUrl,
+        attachmentMimeType: ev.attachmentMimeType,
+        attachmentSize: ev.attachmentSize,
+        room: ev.room.name,
+        hotel: ev.room.hotel.name,
+      },
+    });
+  }
 
   revalidatePath("/");
   revalidatePath("/akce");
@@ -180,7 +342,7 @@ export async function updateEvent(
 
   const existing = await prisma.event.findUnique({
     where: { id },
-    select: { roomId: true },
+    include: { room: { include: { hotel: true } } },
   });
   if (!existing) return { error: "Akce nenalezena" };
 
@@ -202,9 +364,12 @@ export async function updateEvent(
     timeStart,
     timeEnd,
     contactPerson,
+    contactInfo,
     attendees,
     description,
   } = parsed.data;
+  const attachmentFile = getAttachmentFile(formData);
+  const removeAttachment = parseRemoveAttachment(formData.get("removeAttachment"));
 
   const primaryRoomId = roomIds.includes(existing.roomId)
     ? existing.roomId
@@ -224,6 +389,27 @@ export async function updateEvent(
 
   const allDay = parseAllDay(allDayRaw);
   const times = normalizeEventTimes(allDay, timeStart, timeEnd);
+  let uploadedAttachment: UploadedAttachment | null = null;
+
+  if (attachmentFile) {
+    const uploadResult = await uploadEventAttachment(attachmentFile, user.id);
+    if (uploadResult.error) {
+      return { fieldErrors: { attachment: [uploadResult.error] } };
+    }
+    uploadedAttachment = uploadResult.data ?? null;
+  }
+
+  const attachmentData = uploadedAttachment
+    ? toAttachmentFields(uploadedAttachment)
+    : removeAttachment
+      ? toAttachmentFields(null)
+      : {
+          attachmentName: existing.attachmentName,
+          attachmentPath: existing.attachmentPath,
+          attachmentUrl: existing.attachmentUrl,
+          attachmentMimeType: existing.attachmentMimeType,
+          attachmentSize: existing.attachmentSize,
+        };
 
   const eventData = {
     title,
@@ -233,25 +419,122 @@ export async function updateEvent(
     timeStart: times.timeStart,
     timeEnd: times.timeEnd,
     contactPerson: contactPerson || null,
+    contactInfo: contactInfo || null,
     attendees: attendees ? parseInt(attendees) : null,
     description: description || null,
+    ...attachmentData,
   };
 
-  await prisma.$transaction([
-    prisma.event.update({
-      where: { id },
-      data: { ...eventData, roomId: primaryRoomId },
-    }),
-    ...extraRoomIds.map((roomId) =>
-      prisma.event.create({
-        data: {
-          ...eventData,
-          roomId,
-          createdBy: user.id,
-        },
-      }),
-    ),
-  ]);
+  const beforeSnapshot = {
+    title: existing.title,
+    date: existing.date.toISOString(),
+    dateEnd: existing.dateEnd?.toISOString() ?? null,
+    allDay: existing.allDay,
+    timeStart: existing.timeStart,
+    timeEnd: existing.timeEnd,
+    contactPerson: existing.contactPerson,
+    contactInfo: existing.contactInfo,
+    attendees: existing.attendees,
+    description: existing.description,
+    attachmentName: existing.attachmentName,
+    attachmentUrl: existing.attachmentUrl,
+    attachmentMimeType: existing.attachmentMimeType,
+    attachmentSize: existing.attachmentSize,
+    room: existing.room.name,
+    hotel: existing.room.hotel.name,
+  };
+
+  const [updated, ...extras] = await (async () => {
+    try {
+      return await prisma.$transaction([
+        prisma.event.update({
+          where: { id },
+          data: { ...eventData, roomId: primaryRoomId },
+          include: { room: { include: { hotel: true } } },
+        }),
+        ...extraRoomIds.map((roomId) =>
+          prisma.event.create({
+            data: { ...eventData, roomId, createdBy: user.id },
+            include: { room: { include: { hotel: true } } },
+          }),
+        ),
+      ]);
+    } catch (error) {
+      if (uploadedAttachment?.path) {
+        await cleanupUploadedAttachment(uploadedAttachment.path);
+      }
+      throw error;
+    }
+  })();
+
+  const actor = await getActorInfo(user.id);
+  await logAudit({
+    actorId: actor.id,
+    actorEmail: actor.email,
+    actorName: actor.name,
+    action: "EVENT_UPDATE",
+    entityType: "event",
+    entityId: updated.id,
+    entityLabel: updated.title,
+    before: beforeSnapshot,
+    after: {
+      title: updated.title,
+      date: updated.date.toISOString(),
+      dateEnd: updated.dateEnd?.toISOString() ?? null,
+      allDay: updated.allDay,
+      timeStart: updated.timeStart,
+      timeEnd: updated.timeEnd,
+      contactPerson: updated.contactPerson,
+      contactInfo: updated.contactInfo,
+      attendees: updated.attendees,
+      description: updated.description,
+      attachmentName: updated.attachmentName,
+      attachmentUrl: updated.attachmentUrl,
+      attachmentMimeType: updated.attachmentMimeType,
+      attachmentSize: updated.attachmentSize,
+      room: updated.room.name,
+      hotel: updated.room.hotel.name,
+    },
+  });
+  for (const ev of extras) {
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      actorName: actor.name,
+      action: "EVENT_CREATE",
+      entityType: "event",
+      entityId: ev.id,
+      entityLabel: ev.title,
+      after: {
+        title: ev.title,
+        date: ev.date.toISOString(),
+        dateEnd: ev.dateEnd?.toISOString() ?? null,
+        allDay: ev.allDay,
+        timeStart: ev.timeStart,
+        timeEnd: ev.timeEnd,
+        contactPerson: ev.contactPerson,
+        contactInfo: ev.contactInfo,
+        attendees: ev.attendees,
+        description: ev.description,
+        attachmentName: ev.attachmentName,
+        attachmentUrl: ev.attachmentUrl,
+        attachmentMimeType: ev.attachmentMimeType,
+        attachmentSize: ev.attachmentSize,
+        room: ev.room.name,
+        hotel: ev.room.hotel.name,
+      },
+      metadata: { createdFromUpdateOf: id },
+    });
+  }
+
+  const shouldRemovePreviousAttachment =
+    !!existing.attachmentPath &&
+    (removeAttachment ||
+      (!!uploadedAttachment && uploadedAttachment.path !== existing.attachmentPath));
+
+  if (shouldRemovePreviousAttachment && existing.attachmentPath) {
+    await removeAttachmentIfUnused(existing.attachmentPath);
+  }
 
   revalidatePath("/");
   revalidatePath("/akce");
@@ -270,7 +553,7 @@ export async function deleteEvent(id: string): Promise<ActionState> {
 
   const existing = await prisma.event.findUnique({
     where: { id },
-    select: { roomId: true },
+    include: { room: { include: { hotel: true } } },
   });
   if (!existing) return { error: "Akce nenalezena" };
 
@@ -278,6 +561,39 @@ export async function deleteEvent(id: string): Promise<ActionState> {
   if ("error" in allowed) return { error: allowed.error };
 
   await prisma.event.delete({ where: { id } });
+
+  const actor = await getActorInfo(user.id);
+  await logAudit({
+    actorId: actor.id,
+    actorEmail: actor.email,
+    actorName: actor.name,
+    action: "EVENT_DELETE",
+    entityType: "event",
+    entityId: id,
+    entityLabel: existing.title,
+    before: {
+      title: existing.title,
+      date: existing.date.toISOString(),
+      dateEnd: existing.dateEnd?.toISOString() ?? null,
+      allDay: existing.allDay,
+      timeStart: existing.timeStart,
+      timeEnd: existing.timeEnd,
+      contactPerson: existing.contactPerson,
+      contactInfo: existing.contactInfo,
+      attendees: existing.attendees,
+      description: existing.description,
+      attachmentName: existing.attachmentName,
+      attachmentUrl: existing.attachmentUrl,
+      attachmentMimeType: existing.attachmentMimeType,
+      attachmentSize: existing.attachmentSize,
+      room: existing.room.name,
+      hotel: existing.room.hotel.name,
+    },
+  });
+
+  if (existing.attachmentPath) {
+    await removeAttachmentIfUnused(existing.attachmentPath);
+  }
 
   revalidatePath("/");
   revalidatePath("/akce");
@@ -383,6 +699,21 @@ export async function getEventCountsByHotelId(): Promise<Record<string, number>>
   const counts: Record<string, number> = {};
   for (const room of rooms) {
     counts[room.hotelId] = (counts[room.hotelId] ?? 0) + room._count.events;
+  }
+  return counts;
+}
+
+export async function getEventCountsByRoomId(): Promise<Record<string, number>> {
+  const rooms = await prisma.room.findMany({
+    select: {
+      id: true,
+      _count: { select: { events: true } },
+    },
+  });
+
+  const counts: Record<string, number> = {};
+  for (const room of rooms) {
+    counts[room.id] = room._count.events;
   }
   return counts;
 }

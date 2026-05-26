@@ -40,7 +40,7 @@ const PRESET_COLORS = [
   "#06b6d4", "#3b82f6", "#0ea5e9", "#84cc16",
 ];
 
-type RoomEntry = { id?: string; name: string; isNew?: boolean };
+type RoomEntry = { id?: string; name: string; color?: string; isNew?: boolean };
 
 async function convertToWebP(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -90,6 +90,7 @@ export function HotelForm() {
   const [rooms, setRooms] = useState<RoomEntry[]>([]);
   const [removedRoomIds, setRemovedRoomIds] = useState<string[]>([]);
   const [newRoomName, setNewRoomName] = useState("");
+  const [newRoomColor, setNewRoomColor] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
@@ -98,9 +99,13 @@ export function HotelForm() {
       setColor(hotel?.color ?? "#6366f1");
       setImageUrl(hotel?.imageUrl ?? "");
       setImagePreview(hotel?.imageUrl ?? "");
-      setRooms(hotel?.rooms.map((r: Room) => ({ id: r.id, name: r.name })) ?? []);
+      setRooms(
+        hotel?.rooms.map((r: Room) => ({ id: r.id, name: r.name, color: r.color ?? undefined })) ??
+          [],
+      );
       setRemovedRoomIds([]);
       setNewRoomName("");
+      setNewRoomColor("");
     }
   }, [open, hotel]);
 
@@ -153,8 +158,20 @@ export function HotelForm() {
   function addRoom() {
     const name = newRoomName.trim();
     if (!name) return;
-    setRooms((prev) => [...prev, { name, isNew: true }]);
+    setRooms((prev) => [
+      ...prev,
+      { name, color: newRoomColor || undefined, isNew: true },
+    ]);
     setNewRoomName("");
+    setNewRoomColor("");
+  }
+
+  function updateRoomColor(idx: number, roomColor: string) {
+    setRooms((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], color: roomColor || undefined };
+      return next;
+    });
   }
 
   function removeRoom(idx: number) {
@@ -387,19 +404,29 @@ export function HotelForm() {
               </p>
 
               {rooms.length > 0 && (
-                <ul className="space-y-1">
+                <ul className="space-y-1.5">
                   {rooms.map((room, idx) => (
                     <li
                       key={room.id ?? `new-${idx}`}
                       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 group"
                     >
-                      <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: color }}
+                      <input
+                        type="color"
+                        value={room.color ?? color}
+                        onChange={(e) => updateRoomColor(idx, e.target.value)}
+                        className="w-5 h-5 rounded cursor-pointer border-0 p-0 shrink-0 bg-transparent"
+                        title="Barva místnosti"
                       />
                       <span className="flex-1 text-sm text-zinc-800 truncate">
                         {room.name}
                       </span>
+                      {room.color && room.color !== color ? (
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: room.color }}
+                          title="Vlastní barva"
+                        />
+                      ) : null}
                       {room.isNew && (
                         <span className="text-xs text-zinc-400 bg-zinc-200 rounded px-1.5 py-0.5 shrink-0">
                           nová
@@ -418,29 +445,43 @@ export function HotelForm() {
                 </ul>
               )}
 
-              <div className="flex gap-2">
-                <Input
-                  value={newRoomName}
-                  onChange={(e) => setNewRoomName(e.target.value)}
-                  placeholder="Název místnosti…"
-                  className="flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addRoom();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={addRoom}
-                  aria-label="Přidat místnost"
-                  disabled={!newRoomName.trim()}
-                >
-                  <Plus className="size-4" />
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    placeholder="Název místnosti…"
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addRoom();
+                      }
+                    }}
+                  />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="color"
+                      value={newRoomColor || color}
+                      onChange={(e) => setNewRoomColor(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer border border-zinc-200 p-0.5 shrink-0"
+                      title="Barva nové místnosti"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={addRoom}
+                      aria-label="Přidat místnost"
+                      disabled={!newRoomName.trim()}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-400">
+                  Barva místnosti přepíše barvu hotelu v kalendáři a postranním panelu.
+                </p>
               </div>
             </div>
           </div>

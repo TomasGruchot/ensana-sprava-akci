@@ -46,7 +46,7 @@ export function usePermissionsContext(): PermissionsContextValue {
   const ctx = useContext(PermissionsContext);
   if (!ctx) {
     return {
-      role: Role.USER,
+      role: Role.ADMIN,
       grants: [],
       capabilities: {
         canManageAccounts: false,

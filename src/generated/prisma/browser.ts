@@ -47,3 +47,8 @@ export type PermissionGrant = Prisma.PermissionGrantModel
  * 
  */
 export type RoomManager = Prisma.RoomManagerModel
+/**
+ * Model AuditLog
+ * Záznamy o všech akcích provedených přihlášenými uživateli.
+ */
+export type AuditLog = Prisma.AuditLogModel

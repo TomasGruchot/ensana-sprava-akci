@@ -28,10 +28,12 @@ export type AggregateEvent = {
 
 export type EventAvgAggregateOutputType = {
   attendees: number | null
+  attachmentSize: number | null
 }
 
 export type EventSumAggregateOutputType = {
   attendees: number | null
+  attachmentSize: number | null
 }
 
 export type EventMinAggregateOutputType = {
@@ -44,7 +46,13 @@ export type EventMinAggregateOutputType = {
   timeStart: string | null
   timeEnd: string | null
   contactPerson: string | null
+  contactInfo: string | null
   attendees: number | null
+  attachmentName: string | null
+  attachmentPath: string | null
+  attachmentUrl: string | null
+  attachmentMimeType: string | null
+  attachmentSize: number | null
   roomId: string | null
   createdBy: string | null
   createdAt: Date | null
@@ -61,7 +69,13 @@ export type EventMaxAggregateOutputType = {
   timeStart: string | null
   timeEnd: string | null
   contactPerson: string | null
+  contactInfo: string | null
   attendees: number | null
+  attachmentName: string | null
+  attachmentPath: string | null
+  attachmentUrl: string | null
+  attachmentMimeType: string | null
+  attachmentSize: number | null
   roomId: string | null
   createdBy: string | null
   createdAt: Date | null
@@ -78,7 +92,13 @@ export type EventCountAggregateOutputType = {
   timeStart: number
   timeEnd: number
   contactPerson: number
+  contactInfo: number
   attendees: number
+  attachmentName: number
+  attachmentPath: number
+  attachmentUrl: number
+  attachmentMimeType: number
+  attachmentSize: number
   roomId: number
   createdBy: number
   createdAt: number
@@ -89,10 +109,12 @@ export type EventCountAggregateOutputType = {
 
 export type EventAvgAggregateInputType = {
   attendees?: true
+  attachmentSize?: true
 }
 
 export type EventSumAggregateInputType = {
   attendees?: true
+  attachmentSize?: true
 }
 
 export type EventMinAggregateInputType = {
@@ -105,7 +127,13 @@ export type EventMinAggregateInputType = {
   timeStart?: true
   timeEnd?: true
   contactPerson?: true
+  contactInfo?: true
   attendees?: true
+  attachmentName?: true
+  attachmentPath?: true
+  attachmentUrl?: true
+  attachmentMimeType?: true
+  attachmentSize?: true
   roomId?: true
   createdBy?: true
   createdAt?: true
@@ -122,7 +150,13 @@ export type EventMaxAggregateInputType = {
   timeStart?: true
   timeEnd?: true
   contactPerson?: true
+  contactInfo?: true
   attendees?: true
+  attachmentName?: true
+  attachmentPath?: true
+  attachmentUrl?: true
+  attachmentMimeType?: true
+  attachmentSize?: true
   roomId?: true
   createdBy?: true
   createdAt?: true
@@ -139,7 +173,13 @@ export type EventCountAggregateInputType = {
   timeStart?: true
   timeEnd?: true
   contactPerson?: true
+  contactInfo?: true
   attendees?: true
+  attachmentName?: true
+  attachmentPath?: true
+  attachmentUrl?: true
+  attachmentMimeType?: true
+  attachmentSize?: true
   roomId?: true
   createdBy?: true
   createdAt?: true
@@ -243,7 +283,13 @@ export type EventGroupByOutputType = {
   timeStart: string | null
   timeEnd: string | null
   contactPerson: string | null
+  contactInfo: string | null
   attendees: number | null
+  attachmentName: string | null
+  attachmentPath: string | null
+  attachmentUrl: string | null
+  attachmentMimeType: string | null
+  attachmentSize: number | null
   roomId: string
   createdBy: string | null
   createdAt: Date
@@ -283,7 +329,13 @@ export type EventWhereInput = {
   timeStart?: Prisma.StringNullableFilter<"Event"> | string | null
   timeEnd?: Prisma.StringNullableFilter<"Event"> | string | null
   contactPerson?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactInfo?: Prisma.StringNullableFilter<"Event"> | string | null
   attendees?: Prisma.IntNullableFilter<"Event"> | number | null
+  attachmentName?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentPath?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentUrl?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentMimeType?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentSize?: Prisma.IntNullableFilter<"Event"> | number | null
   roomId?: Prisma.StringFilter<"Event"> | string
   createdBy?: Prisma.StringNullableFilter<"Event"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
@@ -301,7 +353,13 @@ export type EventOrderByWithRelationInput = {
   timeStart?: Prisma.SortOrderInput | Prisma.SortOrder
   timeEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   contactPerson?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactInfo?: Prisma.SortOrderInput | Prisma.SortOrder
   attendees?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentName?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentPath?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentMimeType?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrderInput | Prisma.SortOrder
   roomId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -322,7 +380,13 @@ export type EventWhereUniqueInput = Prisma.AtLeast<{
   timeStart?: Prisma.StringNullableFilter<"Event"> | string | null
   timeEnd?: Prisma.StringNullableFilter<"Event"> | string | null
   contactPerson?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactInfo?: Prisma.StringNullableFilter<"Event"> | string | null
   attendees?: Prisma.IntNullableFilter<"Event"> | number | null
+  attachmentName?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentPath?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentUrl?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentMimeType?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentSize?: Prisma.IntNullableFilter<"Event"> | number | null
   roomId?: Prisma.StringFilter<"Event"> | string
   createdBy?: Prisma.StringNullableFilter<"Event"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
@@ -340,7 +404,13 @@ export type EventOrderByWithAggregationInput = {
   timeStart?: Prisma.SortOrderInput | Prisma.SortOrder
   timeEnd?: Prisma.SortOrderInput | Prisma.SortOrder
   contactPerson?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactInfo?: Prisma.SortOrderInput | Prisma.SortOrder
   attendees?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentName?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentPath?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentMimeType?: Prisma.SortOrderInput | Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrderInput | Prisma.SortOrder
   roomId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -365,7 +435,13 @@ export type EventScalarWhereWithAggregatesInput = {
   timeStart?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   timeEnd?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   contactPerson?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  contactInfo?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   attendees?: Prisma.IntNullableWithAggregatesFilter<"Event"> | number | null
+  attachmentName?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  attachmentPath?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  attachmentUrl?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  attachmentMimeType?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
+  attachmentSize?: Prisma.IntNullableWithAggregatesFilter<"Event"> | number | null
   roomId?: Prisma.StringWithAggregatesFilter<"Event"> | string
   createdBy?: Prisma.StringNullableWithAggregatesFilter<"Event"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Event"> | Date | string
@@ -382,7 +458,13 @@ export type EventCreateInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   createdBy?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -399,7 +481,13 @@ export type EventUncheckedCreateInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   roomId: string
   createdBy?: string | null
   createdAt?: Date | string
@@ -416,7 +504,13 @@ export type EventUpdateInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -433,7 +527,13 @@ export type EventUncheckedUpdateInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -450,7 +550,13 @@ export type EventCreateManyInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   roomId: string
   createdBy?: string | null
   createdAt?: Date | string
@@ -467,7 +573,13 @@ export type EventUpdateManyMutationInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -483,7 +595,13 @@ export type EventUncheckedUpdateManyInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   roomId?: Prisma.StringFieldUpdateOperationsInput | string
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -510,7 +628,13 @@ export type EventCountOrderByAggregateInput = {
   timeStart?: Prisma.SortOrder
   timeEnd?: Prisma.SortOrder
   contactPerson?: Prisma.SortOrder
+  contactInfo?: Prisma.SortOrder
   attendees?: Prisma.SortOrder
+  attachmentName?: Prisma.SortOrder
+  attachmentPath?: Prisma.SortOrder
+  attachmentUrl?: Prisma.SortOrder
+  attachmentMimeType?: Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -519,6 +643,7 @@ export type EventCountOrderByAggregateInput = {
 
 export type EventAvgOrderByAggregateInput = {
   attendees?: Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrder
 }
 
 export type EventMaxOrderByAggregateInput = {
@@ -531,7 +656,13 @@ export type EventMaxOrderByAggregateInput = {
   timeStart?: Prisma.SortOrder
   timeEnd?: Prisma.SortOrder
   contactPerson?: Prisma.SortOrder
+  contactInfo?: Prisma.SortOrder
   attendees?: Prisma.SortOrder
+  attachmentName?: Prisma.SortOrder
+  attachmentPath?: Prisma.SortOrder
+  attachmentUrl?: Prisma.SortOrder
+  attachmentMimeType?: Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -548,7 +679,13 @@ export type EventMinOrderByAggregateInput = {
   timeStart?: Prisma.SortOrder
   timeEnd?: Prisma.SortOrder
   contactPerson?: Prisma.SortOrder
+  contactInfo?: Prisma.SortOrder
   attendees?: Prisma.SortOrder
+  attachmentName?: Prisma.SortOrder
+  attachmentPath?: Prisma.SortOrder
+  attachmentUrl?: Prisma.SortOrder
+  attachmentMimeType?: Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrder
   roomId?: Prisma.SortOrder
   createdBy?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -557,6 +694,7 @@ export type EventMinOrderByAggregateInput = {
 
 export type EventSumOrderByAggregateInput = {
   attendees?: Prisma.SortOrder
+  attachmentSize?: Prisma.SortOrder
 }
 
 export type EventCreateNestedManyWithoutRoomInput = {
@@ -627,7 +765,13 @@ export type EventCreateWithoutRoomInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   createdBy?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -643,7 +787,13 @@ export type EventUncheckedCreateWithoutRoomInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   createdBy?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -688,7 +838,13 @@ export type EventScalarWhereInput = {
   timeStart?: Prisma.StringNullableFilter<"Event"> | string | null
   timeEnd?: Prisma.StringNullableFilter<"Event"> | string | null
   contactPerson?: Prisma.StringNullableFilter<"Event"> | string | null
+  contactInfo?: Prisma.StringNullableFilter<"Event"> | string | null
   attendees?: Prisma.IntNullableFilter<"Event"> | number | null
+  attachmentName?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentPath?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentUrl?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentMimeType?: Prisma.StringNullableFilter<"Event"> | string | null
+  attachmentSize?: Prisma.IntNullableFilter<"Event"> | number | null
   roomId?: Prisma.StringFilter<"Event"> | string
   createdBy?: Prisma.StringNullableFilter<"Event"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Event"> | Date | string
@@ -705,7 +861,13 @@ export type EventCreateManyRoomInput = {
   timeStart?: string | null
   timeEnd?: string | null
   contactPerson?: string | null
+  contactInfo?: string | null
   attendees?: number | null
+  attachmentName?: string | null
+  attachmentPath?: string | null
+  attachmentUrl?: string | null
+  attachmentMimeType?: string | null
+  attachmentSize?: number | null
   createdBy?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -721,7 +883,13 @@ export type EventUpdateWithoutRoomInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -737,7 +905,13 @@ export type EventUncheckedUpdateWithoutRoomInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -753,7 +927,13 @@ export type EventUncheckedUpdateManyWithoutRoomInput = {
   timeStart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timeEnd?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   contactPerson?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactInfo?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   attendees?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  attachmentName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentPath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentMimeType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  attachmentSize?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -771,7 +951,13 @@ export type EventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   timeStart?: boolean
   timeEnd?: boolean
   contactPerson?: boolean
+  contactInfo?: boolean
   attendees?: boolean
+  attachmentName?: boolean
+  attachmentPath?: boolean
+  attachmentUrl?: boolean
+  attachmentMimeType?: boolean
+  attachmentSize?: boolean
   roomId?: boolean
   createdBy?: boolean
   createdAt?: boolean
@@ -789,7 +975,13 @@ export type EventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   timeStart?: boolean
   timeEnd?: boolean
   contactPerson?: boolean
+  contactInfo?: boolean
   attendees?: boolean
+  attachmentName?: boolean
+  attachmentPath?: boolean
+  attachmentUrl?: boolean
+  attachmentMimeType?: boolean
+  attachmentSize?: boolean
   roomId?: boolean
   createdBy?: boolean
   createdAt?: boolean
@@ -807,7 +999,13 @@ export type EventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   timeStart?: boolean
   timeEnd?: boolean
   contactPerson?: boolean
+  contactInfo?: boolean
   attendees?: boolean
+  attachmentName?: boolean
+  attachmentPath?: boolean
+  attachmentUrl?: boolean
+  attachmentMimeType?: boolean
+  attachmentSize?: boolean
   roomId?: boolean
   createdBy?: boolean
   createdAt?: boolean
@@ -825,14 +1023,20 @@ export type EventSelectScalar = {
   timeStart?: boolean
   timeEnd?: boolean
   contactPerson?: boolean
+  contactInfo?: boolean
   attendees?: boolean
+  attachmentName?: boolean
+  attachmentPath?: boolean
+  attachmentUrl?: boolean
+  attachmentMimeType?: boolean
+  attachmentSize?: boolean
   roomId?: boolean
   createdBy?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "date" | "dateEnd" | "allDay" | "timeStart" | "timeEnd" | "contactPerson" | "attendees" | "roomId" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["event"]>
+export type EventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "date" | "dateEnd" | "allDay" | "timeStart" | "timeEnd" | "contactPerson" | "contactInfo" | "attendees" | "attachmentName" | "attachmentPath" | "attachmentUrl" | "attachmentMimeType" | "attachmentSize" | "roomId" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["event"]>
 export type EventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
 }
@@ -858,7 +1062,13 @@ export type $EventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     timeStart: string | null
     timeEnd: string | null
     contactPerson: string | null
+    contactInfo: string | null
     attendees: number | null
+    attachmentName: string | null
+    attachmentPath: string | null
+    attachmentUrl: string | null
+    attachmentMimeType: string | null
+    attachmentSize: number | null
     roomId: string
     createdBy: string | null
     createdAt: Date
@@ -1296,7 +1506,13 @@ export interface EventFieldRefs {
   readonly timeStart: Prisma.FieldRef<"Event", 'String'>
   readonly timeEnd: Prisma.FieldRef<"Event", 'String'>
   readonly contactPerson: Prisma.FieldRef<"Event", 'String'>
+  readonly contactInfo: Prisma.FieldRef<"Event", 'String'>
   readonly attendees: Prisma.FieldRef<"Event", 'Int'>
+  readonly attachmentName: Prisma.FieldRef<"Event", 'String'>
+  readonly attachmentPath: Prisma.FieldRef<"Event", 'String'>
+  readonly attachmentUrl: Prisma.FieldRef<"Event", 'String'>
+  readonly attachmentMimeType: Prisma.FieldRef<"Event", 'String'>
+  readonly attachmentSize: Prisma.FieldRef<"Event", 'Int'>
   readonly roomId: Prisma.FieldRef<"Event", 'String'>
   readonly createdBy: Prisma.FieldRef<"Event", 'String'>
   readonly createdAt: Prisma.FieldRef<"Event", 'DateTime'>

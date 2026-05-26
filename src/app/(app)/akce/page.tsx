@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventTable } from "@/components/events/event-table";
 import { EventFilters } from "@/components/events/event-filters";
 import { EventViewSwitcher } from "@/components/events/event-view-switcher";
+import { PrintButton } from "@/components/events/print-button";
 import { EventCalendar } from "@/components/events/event-calendar";
 import { AkceFiltersRestorer } from "@/components/events/akce-filters-restorer";
 import { getEvents, getHotelsWithRooms } from "@/lib/actions/events";
@@ -40,7 +41,8 @@ export default async function AkcePage({ searchParams }: AkcePageProps) {
             Přehled rezervací napříč všemi hotely
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <PrintButton />
           <EventViewSwitcher />
         </div>
       </div>
@@ -104,7 +106,7 @@ function TableSkeleton() {
     <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
       {/* Header */}
       <div className="bg-zinc-50 border-b border-zinc-200 px-4 py-3 flex gap-4">
-        {[80, 60, 200, 100, 120, 120, 60, 32].map((w, i) => (
+        {[80, 60, 200, 100, 120, 120, 120, 60, 32].map((w, i) => (
           <Skeleton key={i} style={{ width: w }} className="h-4" />
         ))}
       </div>

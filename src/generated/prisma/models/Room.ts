@@ -28,6 +28,7 @@ export type RoomMinAggregateOutputType = {
   id: string | null
   name: string | null
   hotelId: string | null
+  color: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -36,6 +37,7 @@ export type RoomMaxAggregateOutputType = {
   id: string | null
   name: string | null
   hotelId: string | null
+  color: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +46,7 @@ export type RoomCountAggregateOutputType = {
   id: number
   name: number
   hotelId: number
+  color: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -54,6 +57,7 @@ export type RoomMinAggregateInputType = {
   id?: true
   name?: true
   hotelId?: true
+  color?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -62,6 +66,7 @@ export type RoomMaxAggregateInputType = {
   id?: true
   name?: true
   hotelId?: true
+  color?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -70,6 +75,7 @@ export type RoomCountAggregateInputType = {
   id?: true
   name?: true
   hotelId?: true
+  color?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -151,6 +157,7 @@ export type RoomGroupByOutputType = {
   id: string
   name: string
   hotelId: string
+  color: string | null
   createdAt: Date
   updatedAt: Date
   _count: RoomCountAggregateOutputType | null
@@ -180,6 +187,7 @@ export type RoomWhereInput = {
   id?: Prisma.StringFilter<"Room"> | string
   name?: Prisma.StringFilter<"Room"> | string
   hotelId?: Prisma.StringFilter<"Room"> | string
+  color?: Prisma.StringNullableFilter<"Room"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   hotel?: Prisma.XOR<Prisma.HotelScalarRelationFilter, Prisma.HotelWhereInput>
@@ -192,6 +200,7 @@ export type RoomOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   hotelId?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   hotel?: Prisma.HotelOrderByWithRelationInput
@@ -208,6 +217,7 @@ export type RoomWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.RoomWhereInput | Prisma.RoomWhereInput[]
   name?: Prisma.StringFilter<"Room"> | string
   hotelId?: Prisma.StringFilter<"Room"> | string
+  color?: Prisma.StringNullableFilter<"Room"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   hotel?: Prisma.XOR<Prisma.HotelScalarRelationFilter, Prisma.HotelWhereInput>
@@ -220,6 +230,7 @@ export type RoomOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   hotelId?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.RoomCountOrderByAggregateInput
@@ -234,6 +245,7 @@ export type RoomScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Room"> | string
   name?: Prisma.StringWithAggregatesFilter<"Room"> | string
   hotelId?: Prisma.StringWithAggregatesFilter<"Room"> | string
+  color?: Prisma.StringNullableWithAggregatesFilter<"Room"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Room"> | Date | string
 }
@@ -241,6 +253,7 @@ export type RoomScalarWhereWithAggregatesInput = {
 export type RoomCreateInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   hotel: Prisma.HotelCreateNestedOneWithoutRoomsInput
@@ -253,6 +266,7 @@ export type RoomUncheckedCreateInput = {
   id?: string
   name: string
   hotelId: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventUncheckedCreateNestedManyWithoutRoomInput
@@ -263,6 +277,7 @@ export type RoomUncheckedCreateInput = {
 export type RoomUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   hotel?: Prisma.HotelUpdateOneRequiredWithoutRoomsNestedInput
@@ -275,6 +290,7 @@ export type RoomUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   hotelId?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUncheckedUpdateManyWithoutRoomNestedInput
@@ -286,6 +302,7 @@ export type RoomCreateManyInput = {
   id?: string
   name: string
   hotelId: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -293,6 +310,7 @@ export type RoomCreateManyInput = {
 export type RoomUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -301,6 +319,7 @@ export type RoomUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   hotelId?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -324,6 +343,7 @@ export type RoomCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   hotelId?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -332,6 +352,7 @@ export type RoomMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   hotelId?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -340,6 +361,7 @@ export type RoomMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   hotelId?: Prisma.SortOrder
+  color?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -443,6 +465,7 @@ export type RoomUpdateOneRequiredWithoutManagersNestedInput = {
 export type RoomCreateWithoutHotelInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventCreateNestedManyWithoutRoomInput
@@ -453,6 +476,7 @@ export type RoomCreateWithoutHotelInput = {
 export type RoomUncheckedCreateWithoutHotelInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventUncheckedCreateNestedManyWithoutRoomInput
@@ -493,6 +517,7 @@ export type RoomScalarWhereInput = {
   id?: Prisma.StringFilter<"Room"> | string
   name?: Prisma.StringFilter<"Room"> | string
   hotelId?: Prisma.StringFilter<"Room"> | string
+  color?: Prisma.StringNullableFilter<"Room"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
 }
@@ -500,6 +525,7 @@ export type RoomScalarWhereInput = {
 export type RoomCreateWithoutEventsInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   hotel: Prisma.HotelCreateNestedOneWithoutRoomsInput
@@ -511,6 +537,7 @@ export type RoomUncheckedCreateWithoutEventsInput = {
   id?: string
   name: string
   hotelId: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   managers?: Prisma.RoomManagerUncheckedCreateNestedManyWithoutRoomInput
@@ -536,6 +563,7 @@ export type RoomUpdateToOneWithWhereWithoutEventsInput = {
 export type RoomUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   hotel?: Prisma.HotelUpdateOneRequiredWithoutRoomsNestedInput
@@ -547,6 +575,7 @@ export type RoomUncheckedUpdateWithoutEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   hotelId?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   managers?: Prisma.RoomManagerUncheckedUpdateManyWithoutRoomNestedInput
@@ -556,6 +585,7 @@ export type RoomUncheckedUpdateWithoutEventsInput = {
 export type RoomCreateWithoutGrantsInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   hotel: Prisma.HotelCreateNestedOneWithoutRoomsInput
@@ -567,6 +597,7 @@ export type RoomUncheckedCreateWithoutGrantsInput = {
   id?: string
   name: string
   hotelId: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventUncheckedCreateNestedManyWithoutRoomInput
@@ -592,6 +623,7 @@ export type RoomUpdateToOneWithWhereWithoutGrantsInput = {
 export type RoomUpdateWithoutGrantsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   hotel?: Prisma.HotelUpdateOneRequiredWithoutRoomsNestedInput
@@ -603,6 +635,7 @@ export type RoomUncheckedUpdateWithoutGrantsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   hotelId?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUncheckedUpdateManyWithoutRoomNestedInput
@@ -612,6 +645,7 @@ export type RoomUncheckedUpdateWithoutGrantsInput = {
 export type RoomCreateWithoutManagersInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   hotel: Prisma.HotelCreateNestedOneWithoutRoomsInput
@@ -623,6 +657,7 @@ export type RoomUncheckedCreateWithoutManagersInput = {
   id?: string
   name: string
   hotelId: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.EventUncheckedCreateNestedManyWithoutRoomInput
@@ -648,6 +683,7 @@ export type RoomUpdateToOneWithWhereWithoutManagersInput = {
 export type RoomUpdateWithoutManagersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   hotel?: Prisma.HotelUpdateOneRequiredWithoutRoomsNestedInput
@@ -659,6 +695,7 @@ export type RoomUncheckedUpdateWithoutManagersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   hotelId?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUncheckedUpdateManyWithoutRoomNestedInput
@@ -668,6 +705,7 @@ export type RoomUncheckedUpdateWithoutManagersInput = {
 export type RoomCreateManyHotelInput = {
   id?: string
   name: string
+  color?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -675,6 +713,7 @@ export type RoomCreateManyHotelInput = {
 export type RoomUpdateWithoutHotelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUpdateManyWithoutRoomNestedInput
@@ -685,6 +724,7 @@ export type RoomUpdateWithoutHotelInput = {
 export type RoomUncheckedUpdateWithoutHotelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.EventUncheckedUpdateManyWithoutRoomNestedInput
@@ -695,6 +735,7 @@ export type RoomUncheckedUpdateWithoutHotelInput = {
 export type RoomUncheckedUpdateManyWithoutHotelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -752,6 +793,7 @@ export type RoomSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   name?: boolean
   hotelId?: boolean
+  color?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   hotel?: boolean | Prisma.HotelDefaultArgs<ExtArgs>
@@ -765,6 +807,7 @@ export type RoomSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   name?: boolean
   hotelId?: boolean
+  color?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   hotel?: boolean | Prisma.HotelDefaultArgs<ExtArgs>
@@ -774,6 +817,7 @@ export type RoomSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   name?: boolean
   hotelId?: boolean
+  color?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   hotel?: boolean | Prisma.HotelDefaultArgs<ExtArgs>
@@ -783,11 +827,12 @@ export type RoomSelectScalar = {
   id?: boolean
   name?: boolean
   hotelId?: boolean
+  color?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type RoomOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "hotelId" | "createdAt" | "updatedAt", ExtArgs["result"]["room"]>
+export type RoomOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "hotelId" | "color" | "createdAt" | "updatedAt", ExtArgs["result"]["room"]>
 export type RoomInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   hotel?: boolean | Prisma.HotelDefaultArgs<ExtArgs>
   events?: boolean | Prisma.Room$eventsArgs<ExtArgs>
@@ -814,6 +859,7 @@ export type $RoomPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     name: string
     hotelId: string
+    color: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["room"]>
@@ -1246,6 +1292,7 @@ export interface RoomFieldRefs {
   readonly id: Prisma.FieldRef<"Room", 'String'>
   readonly name: Prisma.FieldRef<"Room", 'String'>
   readonly hotelId: Prisma.FieldRef<"Room", 'String'>
+  readonly color: Prisma.FieldRef<"Room", 'String'>
   readonly createdAt: Prisma.FieldRef<"Room", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Room", 'DateTime'>
 }

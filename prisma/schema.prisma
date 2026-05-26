@@ -23,6 +23,7 @@ model Room {
   id        String             @id @default(cuid())
   name      String
   hotelId   String
+  color     String?
   hotel     Hotel              @relation(fields: [hotelId], references: [id], onDelete: Cascade)
   events    Event[]
   managers  RoomManager[]
@@ -43,7 +44,13 @@ model Event {
   timeStart     String?
   timeEnd       String?
   contactPerson String?
+  contactInfo   String?
   attendees     Int?
+  attachmentName     String?
+  attachmentPath     String?
+  attachmentUrl      String?
+  attachmentMimeType String?
+  attachmentSize     Int?
   roomId        String
   room          Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   createdBy     String?
@@ -102,4 +109,23 @@ model RoomManager {
   createdAt DateTime @default(now())
 
   @@unique([roomId, profileId])
+}
+
+/// Záznamy o všech akcích provedených přihlášenými uživateli.
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String?
+  actorEmail  String?
+  actorName   String?
+  action      String
+  entityType  String
+  entityId    String?
+  entityLabel String?
+  before      Json?
+  after       Json?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorId])
+  @@index([createdAt(sort: Desc)])
 }

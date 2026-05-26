@@ -1,0 +1,349 @@
+/* ----------------------------------------------------------------------
+   Print styles for /akce/tisk
+   ---------------------------------------------------------------------- */
+
+/* Default screen background — tlumený, ať je vidět "papír" ve středu */
+.print-root {
+  min-height: 100vh;
+  background: #f4f4f5;
+}
+
+/* A4 landscape — list i kalendář vejdou bohatě na šířku */
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+/* "Papír" — to, co se reálně tiskne */
+.print-paper {
+  background: #ffffff;
+  color: #18181b;
+  width: 277mm; /* A4 landscape minus margins */
+  min-height: 190mm;
+  margin: 0 auto;
+  padding: 14mm 12mm;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+@media screen {
+  .print-screen-bar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-root {
+    background: #ffffff !important;
+  }
+
+  .print-paper {
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Avoid breaking rows in half */
+  tr,
+  .print-no-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Optimalizace barvy — chceme aby barvy hotelu zůstaly i v tisku */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* --- Tisková tabulka ------------------------------------------------- */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5pt;
+  table-layout: auto;
+}
+
+.print-table thead th {
+  background: #f4f4f5;
+  color: #52525b;
+  font-weight: 600;
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1.5px solid #d4d4d8;
+}
+
+.print-table tbody td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e4e4e7;
+  vertical-align: top;
+  color: #18181b;
+}
+
+.print-table tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+.print-table .nowrap {
+  white-space: nowrap;
+}
+
+.print-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.print-table .center {
+  text-align: center;
+}
+
+.hotel-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* --- Tiskový kalendář (měsíc) --------------------------------------- */
+.print-month {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9pt;
+}
+
+.print-month thead th {
+  background: #f4f4f5;
+  color: #52525b;
+  font-weight: 600;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 5px 4px;
+  border-bottom: 1.5px solid #d4d4d8;
+  border-right: 1px solid #e4e4e7;
+}
+
+.print-month thead th:last-child {
+  border-right: none;
+}
+
+.print-month td {
+  border: 1px solid #e4e4e7;
+  padding: 4px;
+  vertical-align: top;
+  height: 110px;
+  width: 14.28%;
+  position: relative;
+}
+
+.print-month td.is-outside {
+  background: #fafafa;
+  color: #a1a1aa;
+}
+
+.print-month td.is-today {
+  background: #f0f9ff;
+}
+
+.print-month .day-num {
+  font-weight: 600;
+  font-size: 9pt;
+  color: #18181b;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.print-month .day-num.muted {
+  color: #a1a1aa;
+}
+
+.print-month .ev {
+  display: block;
+  font-size: 8pt;
+  line-height: 1.15;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+  border-radius: 3px;
+  color: #ffffff;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.print-month .ev .ev-room {
+  font-weight: 400;
+  opacity: 0.92;
+  margin-left: 4px;
+}
+
+.print-month .ev-more {
+  font-size: 7.5pt;
+  color: #71717a;
+  font-weight: 600;
+  padding: 1px 4px;
+}
+
+/* --- Týden / den (timeline) ----------------------------------------- */
+.print-week {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 9pt;
+}
+
+.print-week thead th {
+  background: #f4f4f5;
+  color: #52525b;
+  font-weight: 600;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1.5px solid #d4d4d8;
+  border-right: 1px solid #e4e4e7;
+}
+
+.print-week thead th:last-child {
+  border-right: none;
+}
+
+.print-week tbody td {
+  border: 1px solid #e4e4e7;
+  padding: 5px;
+  vertical-align: top;
+  min-height: 120px;
+}
+
+.print-week .day-num {
+  font-weight: 700;
+  font-size: 10pt;
+  color: #18181b;
+  margin-bottom: 4px;
+}
+
+.print-week .day-num.muted {
+  color: #a1a1aa;
+}
+
+.print-week .ev {
+  display: block;
+  font-size: 8.5pt;
+  line-height: 1.2;
+  padding: 3px 6px;
+  margin-bottom: 3px;
+  border-radius: 4px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.print-week .ev .ev-room {
+  font-weight: 400;
+  opacity: 0.92;
+  display: block;
+  margin-top: 1px;
+}
+
+/* --- Header (papír) ------------------------------------------------- */
+.print-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid #18181b;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.print-header h1 {
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #18181b;
+}
+
+.print-header .meta {
+  font-size: 9pt;
+  color: #52525b;
+  text-align: right;
+  line-height: 1.4;
+}
+
+.print-header .meta strong {
+  color: #18181b;
+  font-weight: 600;
+}
+
+.print-subheader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 12px;
+  font-size: 9.5pt;
+  color: #52525b;
+}
+
+.print-subheader .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-weight: 500;
+  color: #18181b;
+}
+
+.print-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #71717a;
+  font-size: 11pt;
+  font-style: italic;
+}
+
+.print-footer {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid #e4e4e7;
+  font-size: 8pt;
+  color: #a1a1aa;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
