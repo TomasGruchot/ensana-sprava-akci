@@ -1,211 +1,196 @@
 # =============================================================
-# ENSANA — ONE-CLICK SETUP SKRIPT
-# Spusť jako administrátor v PowerShell:
-#   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-#   .\setup.ps1
+# ENSANA — SETUP / UPDATE
+# Spusť jako správce:  .\setup.ps1
+# Aktualizace kódu:    git pull  pak znovu  .\setup.ps1
 # =============================================================
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 
-function Write-Step { param($msg) Write-Host "`n>>> $msg" -ForegroundColor Cyan }
-function Write-Ok   { param($msg) Write-Host "    OK: $msg" -ForegroundColor Green }
-function Write-Fail { param($msg) Write-Host "    CHYBA: $msg" -ForegroundColor Red; exit 1 }
-function Write-Warn { param($msg) Write-Host "    UPOZORNENI: $msg" -ForegroundColor Yellow }
+function Step  { param($m) Write-Host "`n>>> $m" -ForegroundColor Cyan }
+function Ok    { param($m) Write-Host "    OK: $m" -ForegroundColor Green }
+function Fail  { param($m) Write-Host "`n    CHYBA: $m`n" -ForegroundColor Red; exit 1 }
+function Warn  { param($m) Write-Host "    ! $m" -ForegroundColor Yellow }
+function Ask   { param($m) Write-Host "`n    $m" -ForegroundColor Yellow }
 
-Write-Host @"
+Write-Host "`n  === ENSANA SETUP ===" -ForegroundColor Magenta
 
-  ============================================
-     ENSANA - Server Setup
-  ============================================
-
-"@ -ForegroundColor Magenta
-
-# =============================================================
-# KROK 1 - Kontrola prerekvizit
-# =============================================================
-Write-Step "Kontroluji prerekvizity..."
-
+# ── 1. Node.js ────────────────────────────────────────────────
+Step "Node.js"
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Fail "Node.js neni nainstalovan. Stahni z https://nodejs.org (LTS, .msi) a spust setup.ps1 znovu."
+    Fail "Node.js neni nainstalovan.`n    Stahni LTS z https://nodejs.org (soubor .msi), nainstaluj a spust setup.ps1 znovu."
 }
-Write-Ok "Node.js $(node --version)"
+Ok "Node $(node --version)"
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Fail "Docker neni nainstalovan. Stahni Docker Desktop z https://docker.com."
+# ── 2. PostgreSQL ─────────────────────────────────────────────
+Step "PostgreSQL"
+$pgSvc = Get-Service -Name "postgresql*" -ErrorAction SilentlyContinue |
+         Where-Object { $_.Status -eq "Running" } |
+         Select-Object -First 1
+
+if (-not $pgSvc) {
+    Fail "PostgreSQL sluzba nebezi (nebo neni nainstalovana).`n    Stahni z https://www.postgresql.org/download/windows/`n    Nainstaluj, pak spust setup.ps1 znovu."
 }
-try {
-    docker info > $null 2>&1
-    if ($LASTEXITCODE -ne 0) { throw }
-} catch {
-    Write-Fail "Docker Desktop nebezi. Spust Docker Desktop a zkus znovu."
+Ok "Sluzba bezi: $($pgSvc.Name)"
+
+# Najdi psql.exe
+$psqlPath = (Get-Command psql -ErrorAction SilentlyContinue)?.Source
+if (-not $psqlPath) {
+    $candidates = Get-ChildItem "C:\Program Files\PostgreSQL" -Filter psql.exe -Recurse -ErrorAction SilentlyContinue |
+                  Sort-Object -Property FullName -Descending |
+                  Select-Object -First 1
+    $psqlPath = $candidates?.FullName
 }
-Write-Ok "Docker bezi"
-
-if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
-    Write-Step "Instaluji PM2..."
-    npm install -g pm2
-    npm install -g pm2-windows-startup
-    Write-Ok "PM2 nainstalovan"
-} else {
-    Write-Ok "PM2 $(pm2 --version)"
+if (-not $psqlPath) {
+    Fail "psql.exe nenalezen. Zkontroluj instalaci PostgreSQL."
 }
+Ok "psql: $psqlPath"
 
-if (-not (Get-Command caddy -ErrorAction SilentlyContinue)) {
-    Write-Warn "Caddy neni v PATH. Aplikace pobezi na portu 3000."
-    Write-Warn "Pro pristup na portu 80 stahni caddy.exe z https://caddyserver.com/download."
-} else {
-    Write-Ok "Caddy $(caddy version)"
-}
+# ── 3. .env ───────────────────────────────────────────────────
+Step ".env konfigurace"
+$envPath = Join-Path $ProjectRoot ".env"
 
-# =============================================================
-# KROK 2 - Kontrola .env souboru
-# =============================================================
-Write-Step "Kontroluji konfiguracni soubory..."
+if (-not (Test-Path $envPath)) {
+    Copy-Item (Join-Path $ProjectRoot ".env.example") $envPath
+    Ask @"
+Soubor .env byl vytvoren. Otevri ho a vyplň VSECHNA mista oznacena <<<:
 
-$dbEnvPath  = Join-Path $ProjectRoot "docker\postgres\.env"
-$appEnvPath = Join-Path $ProjectRoot ".env"
-$needsConfig = $false
+  notepad "$envPath"
 
-if (-not (Test-Path $dbEnvPath)) {
-    Copy-Item (Join-Path $ProjectRoot "docker\postgres\.env.example") $dbEnvPath
-    Write-Warn "Vytvoren docker/postgres/.env - MUSIS vyplnit POSTGRES_PASSWORD!"
-    $needsConfig = $true
-} else {
-    Write-Ok "docker/postgres/.env existuje"
-}
-
-if (-not (Test-Path $appEnvPath)) {
-    Copy-Item (Join-Path $ProjectRoot ".env.example") $appEnvPath
-    Write-Warn "Vytvoren .env - MUSIS ho vyplnit!"
-    $needsConfig = $true
-} else {
-    Write-Ok ".env existuje"
-}
-
-if ($needsConfig) {
-    Write-Host @"
-
-  ====================================================
-  ZASTAV SE A VYPLN KONFIGURACI:
-
-  1. docker\postgres\.env
-     - POSTGRES_PASSWORD (silne heslo databaze)
-
-  2. .env
-     - DATABASE_URL a DIRECT_URL (stejne heslo jako vyse)
-     - ADMIN_EMAIL a ADMIN_PASSWORD (prvni prihlaseni)
-     - UPLOADS_DIR (kam ukladat soubory)
-     - NEXT_PUBLIC_APP_URL (http://IP-serveru)
-
-  3. Spust setup.ps1 znovu
-  ====================================================
-
-"@ -ForegroundColor Yellow
+Pak spust setup.ps1 znovu.
+"@
     exit 0
 }
 
-if ((Get-Content $appEnvPath -Raw) -match "<<<") {
-    Write-Fail ".env obsahuje nevyplnene hodnoty (<<<). Vypln je."
+if ((Get-Content $envPath -Raw) -match "<<<") {
+    Ask @"
+.env obsahuje nevyplnene hodnoty (<<<). Otevri a doplň:
+
+  notepad "$envPath"
+
+Pak spust setup.ps1 znovu.
+"@
+    exit 0
 }
-if ((Get-Content $dbEnvPath -Raw) -match "<<<") {
-    Write-Fail "docker/postgres/.env obsahuje nevyplnene hodnoty (<<<). Vypln je."
+
+# Načti .env do proměnných
+$envVars = @{}
+Get-Content $envPath | Where-Object { $_ -match "^\s*[^#].+=." } | ForEach-Object {
+    $parts = $_ -split "=", 2
+    $envVars[$parts[0].Trim()] = $parts[1].Trim()
 }
-Write-Ok "Konfigurace vypada v poradku"
 
-# =============================================================
-# KROK 3 - Spusteni PostgreSQL (Docker)
-# =============================================================
-Write-Step "Spoustim PostgreSQL (Docker Compose)..."
+$pgAdminPwd  = $envVars["POSTGRES_ADMIN_PASSWORD"]
+$pgAppPwd    = $envVars["POSTGRES_PASSWORD"]
 
-Set-Location (Join-Path $ProjectRoot "docker\postgres")
-docker compose up -d
-if ($LASTEXITCODE -ne 0) { Write-Fail "Docker Compose selhal." }
+if (-not $pgAdminPwd) { Fail "POSTGRES_ADMIN_PASSWORD neni v .env." }
+if (-not $pgAppPwd)   { Fail "POSTGRES_PASSWORD neni v .env." }
 
-Write-Host "    Cekam na PostgreSQL..." -NoNewline
-$attempts = 0
-do {
-    Start-Sleep -Seconds 2
-    $attempts++
-    Write-Host "." -NoNewline
-    $health = docker inspect --format="{{.State.Health.Status}}" ensana-db 2>$null
-} while ($health -ne "healthy" -and $attempts -lt 30)
-if ($health -ne "healthy") {
-    Write-Fail "`nPostgreSQL nenastartoval vcas. Zkontroluj: docker logs ensana-db"
+Ok ".env vyplnen"
+
+# ── 4. Vytvoř DB uživatele a databázi (pokud neexistují) ──────
+Step "Databaze (uzivatel ensana + databaze ensana)"
+
+$env:PGPASSWORD = $pgAdminPwd
+
+$checkUser = & $psqlPath -U postgres -h localhost -tAc "SELECT 1 FROM pg_roles WHERE rolname='ensana';" 2>&1
+if ($checkUser -notmatch "1") {
+    & $psqlPath -U postgres -h localhost -c "CREATE USER ensana WITH PASSWORD '$pgAppPwd';" 2>&1 | Out-Null
+    Ok "Uzivatel ensana vytvoren"
+} else {
+    # Aktualizuj heslo pokud se změnilo
+    & $psqlPath -U postgres -h localhost -c "ALTER USER ensana WITH PASSWORD '$pgAppPwd';" 2>&1 | Out-Null
+    Ok "Uzivatel ensana existuje"
 }
-Write-Host " OK" -ForegroundColor Green
 
+$checkDb = & $psqlPath -U postgres -h localhost -tAc "SELECT 1 FROM pg_database WHERE datname='ensana';" 2>&1
+if ($checkDb -notmatch "1") {
+    & $psqlPath -U postgres -h localhost -c "CREATE DATABASE ensana OWNER ensana;" 2>&1 | Out-Null
+    & $psqlPath -U postgres -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE ensana TO ensana;" 2>&1 | Out-Null
+    Ok "Databaze ensana vytvorena"
+} else {
+    Ok "Databaze ensana existuje"
+}
+
+$env:PGPASSWORD = ""
+
+# ── 5. PM2 ────────────────────────────────────────────────────
+Step "PM2"
+if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
+    npm install -g pm2
+    npm install -g pm2-windows-startup
+    Ok "PM2 nainstalovan"
+} else {
+    Ok "PM2 $(pm2 --version)"
+}
+
+# Caddy (volitelne — jen info)
+if (-not (Get-Command caddy -ErrorAction SilentlyContinue)) {
+    Warn "Caddy neni — aplikace pojede na portu 3000 (OK pro interni sit)"
+} else {
+    Ok "Caddy $(caddy version)"
+}
+
+# ── 6. Zavislosti + schema + seed ─────────────────────────────
+Step "npm install"
 Set-Location $ProjectRoot
-
-# =============================================================
-# KROK 4 - Instalace zavislosti
-# =============================================================
-Write-Step "Instaluji npm zavislosti..."
 npm install
-if ($LASTEXITCODE -ne 0) { Write-Fail "npm install selhal." }
-Write-Ok "Zavislosti nainstalovany"
+if ($LASTEXITCODE -ne 0) { Fail "npm install selhal." }
+Ok "Hotovo"
 
-# =============================================================
-# KROK 5 - Databazove schema + prvni admin
-# =============================================================
-Write-Step "Aplikuji databazove schema (Prisma)..."
+Step "Databazove schema (Prisma db:push)"
 npm run db:push
-if ($LASTEXITCODE -ne 0) { Write-Fail "Prisma db:push selhal. Zkontroluj DATABASE_URL v .env." }
-Write-Ok "Schema aplikovano"
+if ($LASTEXITCODE -ne 0) { Fail "db:push selhal — zkontroluj DATABASE_URL v .env." }
+Ok "Schema OK"
 
-Write-Step "Vytvarim prvniho IT admina a vychozi hotely (seed)..."
+Step "Seed (hotely + IT admin)"
 npm run db:seed
-if ($LASTEXITCODE -ne 0) { Write-Warn "Seed skoncil s chybou - zkontroluj vystup vyse." } else { Write-Ok "Seed hotovy" }
+if ($LASTEXITCODE -ne 0) { Warn "Seed skoncil s chybou (prvni admin uz mozna existuje — to je OK)" }
+else { Ok "Seed hotov" }
 
-# =============================================================
-# KROK 6 - Build aplikace
-# =============================================================
-Write-Step "Builduji aplikaci (Next.js)..."
+# ── 7. Build ──────────────────────────────────────────────────
+Step "Build (Next.js)"
 npm run build
-if ($LASTEXITCODE -ne 0) { Write-Fail "Build selhal. Zkontroluj chyby vyse." }
-Write-Ok "Build dokoncen"
+if ($LASTEXITCODE -ne 0) { Fail "Build selhal." }
+Ok "Build hotov"
 
-# =============================================================
-# KROK 7 - Spusteni pres PM2
-# =============================================================
-Write-Step "Spoustim aplikaci pres PM2..."
+# ── 8. Spusteni / restart pres PM2 ────────────────────────────
+Step "PM2 — spoustim / restartuji aplikaci"
 New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot "logs") | Out-Null
-pm2 delete ensana 2>$null
-pm2 start ecosystem.config.js
-if ($LASTEXITCODE -ne 0) { Write-Fail "PM2 start selhal." }
+$running = pm2 list 2>$null | Select-String "ensana"
+if ($running) {
+    pm2 restart ensana
+} else {
+    pm2 start ecosystem.config.js
+}
 pm2 save
 pm2-startup install 2>$null
-Write-Ok "Aplikace bezi pres PM2"
+Ok "Aplikace bezi"
 
-# =============================================================
-# KROK 8 - Caddy (reverse proxy)
-# =============================================================
-Write-Step "Spoustim Caddy reverse proxy..."
+# ── 9. Caddy ──────────────────────────────────────────────────
 if (Get-Command caddy -ErrorAction SilentlyContinue) {
+    Step "Caddy (port 80)"
     Start-Process -FilePath "caddy" -ArgumentList "start --config `"$ProjectRoot\Caddyfile`"" -NoNewWindow
-    Write-Ok "Caddy spusten"
-} else {
-    Write-Warn "Caddy neni dostupny - aplikace bezi jen na portu 3000"
+    Ok "Caddy spusten"
 }
 
-# =============================================================
-# HOTOVO
-# =============================================================
-$serverIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch "^127\." -and $_.IPAddress -notmatch "^169\." } | Select-Object -First 1).IPAddress
+# ── Hotovo ────────────────────────────────────────────────────
+$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
+    $_.IPAddress -notmatch "^127\." -and $_.IPAddress -notmatch "^169\."
+} | Select-Object -First 1).IPAddress
 
 Write-Host @"
 
-  ====================================================
-     SETUP DOKONCEN!
+  ==========================================
+   HOTOVO
 
-     Aplikace:        http://$serverIP
-     Aplikace (3000): http://$serverIP`:3000
+   http://$ip        (s Caddy)
+   http://$ip`:3000  (bez Caddy)
 
-     Prihlaseni: ADMIN_EMAIL / ADMIN_PASSWORD z .env
+   Prihlaseni:  ADMIN_EMAIL / ADMIN_PASSWORD
 
-     PM2 status:   pm2 status
-     PM2 logy:     pm2 logs ensana
-     DB status:    docker ps
-  ====================================================
+   pm2 status       — stav aplikace
+   pm2 logs ensana  — logy
+  ==========================================
 
 "@ -ForegroundColor Green
