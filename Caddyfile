@@ -1,0 +1,9 @@
+# Ensana — Reverse proxy
+# Caddy přesměrovává HTTP port 80 na Next.js (port 3000)
+#
+# Spuštění: caddy run --config Caddyfile
+# Jako služba: caddy start --config Caddyfile
+
+:80 {
+    reverse_proxy localhost:3000
+}
