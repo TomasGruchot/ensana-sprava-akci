@@ -13,6 +13,32 @@ function Fail  { param($m) Write-Host "`n    CHYBA: $m`n" -ForegroundColor Red; 
 function Warn  { param($m) Write-Host "    ! $m" -ForegroundColor Yellow }
 function Ask   { param($m) Write-Host "`n    $m" -ForegroundColor Yellow }
 
+function Encode-DbPassword([string]$pwd) {
+    [uri]::EscapeDataString($pwd)
+}
+
+function Escape-SqlLiteral([string]$value) {
+    $value -replace "'", "''"
+}
+
+function Sync-DatabaseUrl([string]$envPath, [string]$password) {
+    $encoded = Encode-DbPassword $password
+    $url = "postgresql://ensana:${encoded}@localhost:5432/ensana"
+    $lines = Get-Content $envPath
+    $found = $false
+    $out = foreach ($line in $lines) {
+        if ($line -match "^\s*DATABASE_URL\s*=") {
+            $found = $true
+            "DATABASE_URL=$url"
+        } else {
+            $line
+        }
+    }
+    if (-not $found) { $out += "DATABASE_URL=$url" }
+    Set-Content -Path $envPath -Value $out -Encoding UTF8
+    return $url
+}
+
 Write-Host "`n  === ENSANA SETUP ===" -ForegroundColor Magenta
 
 # ── 1. Node.js ────────────────────────────────────────────────
@@ -33,13 +59,20 @@ if (-not $pgSvc) {
 }
 Ok "Sluzba bezi: $($pgSvc.Name)"
 
-# Najdi psql.exe
-$psqlPath = (Get-Command psql -ErrorAction SilentlyContinue)?.Source
-if (-not $psqlPath) {
-    $candidates = Get-ChildItem "C:\Program Files\PostgreSQL" -Filter psql.exe -Recurse -ErrorAction SilentlyContinue |
-                  Sort-Object -Property FullName -Descending |
-                  Select-Object -First 1
-    $psqlPath = $candidates?.FullName
+# Najdi psql.exe (bin/, ne pgAdmin runtime)
+$binPsql = "C:\Program Files\PostgreSQL\17\bin\psql.exe"
+if (Test-Path $binPsql) {
+    $psqlPath = $binPsql
+} else {
+    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
+    $psqlPath = if ($psqlCmd) { $psqlCmd.Source } else { $null }
+    if (-not $psqlPath) {
+        $candidates = Get-ChildItem "C:\Program Files\PostgreSQL" -Filter psql.exe -Recurse -ErrorAction SilentlyContinue |
+                      Where-Object { $_.FullName -match "\\bin\\psql\.exe$" } |
+                      Sort-Object -Property FullName -Descending |
+                      Select-Object -First 1
+        if ($candidates) { $psqlPath = $candidates.FullName }
+    }
 }
 if (-not $psqlPath) {
     Fail "psql.exe nenalezen. Zkontroluj instalaci PostgreSQL."
@@ -88,23 +121,48 @@ if (-not $pgAppPwd)   { Fail "POSTGRES_PASSWORD neni v .env." }
 
 Ok ".env vyplnen"
 
+$dbUrl = Sync-DatabaseUrl $envPath $pgAppPwd
+Ok "DATABASE_URL nastaveno (heslo v URL je zakodovane, napr. ! -> %21)"
+
 # ── 4. Vytvoř DB uživatele a databázi (pokud neexistují) ──────
 Step "Databaze (uzivatel ensana + databaze ensana)"
 
 $env:PGPASSWORD = $pgAdminPwd
+$pgAppPwdSql = Escape-SqlLiteral $pgAppPwd
 
-$checkUser = & $psqlPath -U postgres -h localhost -tAc "SELECT 1 FROM pg_roles WHERE rolname='ensana';" 2>&1
-if ($checkUser -notmatch "1") {
-    & $psqlPath -U postgres -h localhost -c "CREATE USER ensana WITH PASSWORD '$pgAppPwd';" 2>&1 | Out-Null
-    Ok "Uzivatel ensana vytvoren"
-} else {
-    # Aktualizuj heslo pokud se změnilo
-    & $psqlPath -U postgres -h localhost -c "ALTER USER ensana WITH PASSWORD '$pgAppPwd';" 2>&1 | Out-Null
-    Ok "Uzivatel ensana existuje"
+$adminTest = & $psqlPath -U postgres -h localhost -tAc "SELECT 1;" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    $env:PGPASSWORD = "postgres"
+    $retry = & $psqlPath -U postgres -h localhost -tAc "SELECT 1;" 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        & $psqlPath -U postgres -h localhost -c "ALTER USER postgres WITH PASSWORD '$((Escape-SqlLiteral $pgAdminPwd))';" 2>&1 | Out-Null
+        $env:PGPASSWORD = $pgAdminPwd
+        Ok "Postgres superuser mel vychozi heslo 'postgres' - nastaveno z .env"
+    } else {
+        $env:PGPASSWORD = ""
+        Fail "POSTGRES_ADMIN_PASSWORD je spatne - postgres superuser se neprihlasil.`n    Zkontroluj heslo z instalace PostgreSQL v .env."
+    }
 }
 
-$checkDb = & $psqlPath -U postgres -h localhost -tAc "SELECT 1 FROM pg_database WHERE datname='ensana';" 2>&1
-if ($checkDb -notmatch "1") {
+function Get-PsqlScalar([string]$query) {
+    $raw = & $psqlPath -U postgres -h localhost -tAc $query 2>$null
+    if ($null -eq $raw) { return "" }
+    return ($raw | Out-String).Trim()
+}
+
+$checkUser = Get-PsqlScalar "SELECT 1 FROM pg_roles WHERE rolname='ensana';"
+if ($checkUser -ne "1") {
+    $createUser = & $psqlPath -U postgres -h localhost -c "CREATE USER ensana WITH PASSWORD '$pgAppPwdSql';" 2>&1
+    if ($LASTEXITCODE -ne 0) { Fail "Nepodarilo se vytvorit uzivatele ensana: $createUser" }
+    Ok "Uzivatel ensana vytvoren"
+} else {
+    $alterUser = & $psqlPath -U postgres -h localhost -c "ALTER USER ensana WITH PASSWORD '$pgAppPwdSql';" 2>&1
+    if ($LASTEXITCODE -ne 0) { Fail "Nepodarilo se nastavit heslo uzivatele ensana: $alterUser" }
+    Ok "Uzivatel ensana - heslo synchronizovano"
+}
+
+$checkDb = Get-PsqlScalar "SELECT 1 FROM pg_database WHERE datname='ensana';"
+if ($checkDb -ne "1") {
     & $psqlPath -U postgres -h localhost -c "CREATE DATABASE ensana OWNER ensana;" 2>&1 | Out-Null
     & $psqlPath -U postgres -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE ensana TO ensana;" 2>&1 | Out-Null
     Ok "Databaze ensana vytvorena"
@@ -112,7 +170,13 @@ if ($checkDb -notmatch "1") {
     Ok "Databaze ensana existuje"
 }
 
+$env:PGPASSWORD = $pgAppPwd
+$appTest = & $psqlPath -U ensana -h localhost -d ensana -tAc "SELECT 1;" 2>&1
 $env:PGPASSWORD = ""
+if ($LASTEXITCODE -ne 0) {
+    Fail "Uzivatel ensana se neprihlasil k databazi.`n    Spust znovu setup.ps1 nebo zkontroluj POSTGRES_PASSWORD."
+}
+Ok "Pripojeni ensana@ensana funguje"
 
 # ── 5. PM2 ────────────────────────────────────────────────────
 Step "PM2"
@@ -126,7 +190,7 @@ if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
 
 # Caddy (volitelne — jen info)
 if (-not (Get-Command caddy -ErrorAction SilentlyContinue)) {
-    Warn "Caddy neni — aplikace pojede na portu 3000 (OK pro interni sit)"
+    Warn "Caddy neni - aplikace pojede na portu 3000 (OK pro interni sit)"
 } else {
     Ok "Caddy $(caddy version)"
 }
@@ -140,12 +204,12 @@ Ok "Hotovo"
 
 Step "Databazove schema (Prisma db:push)"
 npm run db:push
-if ($LASTEXITCODE -ne 0) { Fail "db:push selhal — zkontroluj DATABASE_URL v .env." }
+if ($LASTEXITCODE -ne 0) { Fail "db:push selhal - zkontroluj DATABASE_URL v .env." }
 Ok "Schema OK"
 
 Step "Seed (hotely + IT admin)"
 npm run db:seed
-if ($LASTEXITCODE -ne 0) { Warn "Seed skoncil s chybou (prvni admin uz mozna existuje — to je OK)" }
+if ($LASTEXITCODE -ne 0) { Warn "Seed skoncil s chybou (prvni admin uz mozna existuje - to je OK)" }
 else { Ok "Seed hotov" }
 
 # ── 7. Build ──────────────────────────────────────────────────
@@ -155,7 +219,7 @@ if ($LASTEXITCODE -ne 0) { Fail "Build selhal." }
 Ok "Build hotov"
 
 # ── 8. Spusteni / restart pres PM2 ────────────────────────────
-Step "PM2 — spoustim / restartuji aplikaci"
+Step "PM2 - spoustim / restartuji aplikaci"
 New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot "logs") | Out-Null
 $running = pm2 list 2>$null | Select-String "ensana"
 if ($running) {
@@ -189,8 +253,8 @@ Write-Host @"
 
    Prihlaseni:  ADMIN_EMAIL / ADMIN_PASSWORD
 
-   pm2 status       — stav aplikace
-   pm2 logs ensana  — logy
+   pm2 status       - stav aplikace
+   pm2 logs ensana  - logy
   ==========================================
 
 "@ -ForegroundColor Green

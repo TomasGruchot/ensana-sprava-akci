@@ -2,7 +2,8 @@ module.exports = {
   apps: [
     {
       name: "ensana",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
+      interpreter: "node",
       args: "start",
       cwd: "./",
       instances: 1,
