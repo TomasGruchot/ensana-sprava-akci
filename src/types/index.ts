@@ -75,4 +75,8 @@ export type ActionState = {
   message?: string;
   createdCount?: number;
   fieldErrors?: Record<string, string[]>;
+  /** Aktivační kód vrácený po vytvoření účtu / vygenerování nového kódu. */
+  activationCode?: string;
+  /** E-mail účtu, ke kterému aktivační kód patří. */
+  activationEmail?: string;
 };

@@ -1,11 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
 import { Role } from "@/generated/prisma/enums";
 import { buildUserCapabilities, type UserCapabilities } from "@/lib/permissions";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { createSession, destroySession, getSessionProfileId } from "@/lib/session";
+import { normalizeActivationCode } from "@/lib/activation";
 import type { ActionState } from "@/types";
 
 export type AppUser = {
@@ -20,87 +22,97 @@ export async function signIn(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const email = formData.get("email") as string;
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 
   if (!email || !password) {
     return { error: "Email a heslo jsou povinné" };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const profile = await prisma.profile.findUnique({ where: { email } });
 
-  if (error) {
+  if (!profile || !profile.passwordHash) {
     return { error: "Nesprávný email nebo heslo" };
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user?.email) {
-    await prisma.profile.upsert({
-      where: { id: user.id },
-      create: {
-        id: user.id,
-        email: user.email,
-        name: formatNameFromEmail(user.email),
-        role: Role.ADMIN,
-      },
-      update: {},
-    });
+  const valid = await bcrypt.compare(password, profile.passwordHash);
+  if (!valid) {
+    return { error: "Nesprávný email nebo heslo" };
   }
 
+  await createSession(profile.id);
   redirect("/");
 }
 
 export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
+  await destroySession();
   redirect("/prihlasit");
 }
 
-export async function getSession() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+/** Aktivace účtu pomocí e-mailu, aktivačního kódu a nového hesla. */
+export async function activateAccount(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const code = normalizeActivationCode((formData.get("code") as string) ?? "");
+  const password = (formData.get("password") as string) ?? "";
+  const confirm = (formData.get("confirm") as string) ?? "";
+
+  if (!email || !code) {
+    return { error: "Vyplňte e-mail i aktivační kód" };
+  }
+  if (password.length < 8) {
+    return { error: "Heslo musí mít alespoň 8 znaků" };
+  }
+  if (password !== confirm) {
+    return { error: "Hesla se neshodují" };
+  }
+
+  const profile = await prisma.profile.findUnique({ where: { email } });
+  if (!profile || !profile.activationCode) {
+    return { error: "Neplatný e-mail nebo aktivační kód" };
+  }
+  if (normalizeActivationCode(profile.activationCode) !== code) {
+    return { error: "Neplatný e-mail nebo aktivační kód" };
+  }
+  if (profile.activationExpiresAt && profile.activationExpiresAt.getTime() < Date.now()) {
+    return { error: "Aktivační kód vypršel. Požádejte IT správu o nový." };
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.profile.update({
+    where: { id: profile.id },
+    data: {
+      passwordHash,
+      activationCode: null,
+      activationExpiresAt: null,
+      activatedAt: new Date(),
+    },
+  });
+
+  await createSession(profile.id);
+  redirect("/");
 }
 
 export async function getAppUser(): Promise<AppUser | null> {
-  const user = await getSession();
-  if (!user) return null;
+  const profileId = await getSessionProfileId();
+  if (!profileId) return null;
 
-  const email = user.email ?? "";
-  const profile = email
-    ? await prisma.profile.findUnique({
-        where: { id: user.id },
-        include: { grants: true },
-      })
-    : null;
+  const profile = await prisma.profile.findUnique({
+    where: { id: profileId },
+    include: { grants: true },
+  });
+  if (!profile) return null;
 
-  const meta = user.user_metadata ?? {};
-  const metaName =
-    typeof meta.full_name === "string"
-      ? meta.full_name
-      : typeof meta.name === "string"
-        ? meta.name
-        : null;
-  const metaAvatar =
-    typeof meta.avatar_url === "string" ? meta.avatar_url : undefined;
-  const avatarUrl = profile?.avatarUrl ?? metaAvatar ?? undefined;
-
-  const name = profile?.name?.trim() || metaName?.trim() || formatNameFromEmail(email);
+  const name = profile.name?.trim() || formatNameFromEmail(profile.email);
 
   return {
-    email: profile?.email ?? email,
+    email: profile.email,
     name,
-    avatarUrl,
-    role: profile?.role ?? Role.ADMIN,
-    capabilities: buildUserCapabilities(
-      profile ?? { role: Role.ADMIN, grants: [] },
-    ),
+    avatarUrl: profile.avatarUrl ?? undefined,
+    role: profile.role,
+    capabilities: buildUserCapabilities(profile),
   };
 }
 

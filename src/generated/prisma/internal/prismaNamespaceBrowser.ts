@@ -55,6 +55,7 @@ export const ModelName = {
   Room: 'Room',
   Event: 'Event',
   Profile: 'Profile',
+  Session: 'Session',
   PermissionGrant: 'PermissionGrant',
   RoomManager: 'RoomManager',
   AuditLog: 'AuditLog'
@@ -133,11 +134,26 @@ export const ProfileScalarFieldEnum = {
   name: 'name',
   avatarUrl: 'avatarUrl',
   role: 'role',
+  passwordHash: 'passwordHash',
+  activationCode: 'activationCode',
+  activationExpiresAt: 'activationExpiresAt',
+  activatedAt: 'activatedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type ProfileScalarFieldEnum = (typeof ProfileScalarFieldEnum)[keyof typeof ProfileScalarFieldEnum]
+
+
+export const SessionScalarFieldEnum = {
+  id: 'id',
+  token: 'token',
+  profileId: 'profileId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt'
+} as const
+
+export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
 
 
 export const PermissionGrantScalarFieldEnum = {

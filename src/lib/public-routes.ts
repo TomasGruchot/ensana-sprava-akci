@@ -1,8 +1,8 @@
 /** Stránky dostupné bez přihlášení (pouze čtení). */
 const PUBLIC_READ_PATHS = ["/", "/hotely", "/akce"] as const;
 
-/** Auth callback a přihlášení — bez kontroly session. */
-const AUTH_EXEMPT_PATHS = ["/prihlasit", "/auth/callback", "/nastavit-heslo"] as const;
+/** Přihlášení a registrace (aktivace účtu) — bez kontroly session. */
+const AUTH_EXEMPT_PATHS = ["/prihlasit", "/registrace"] as const;
 
 export function isPublicReadPath(pathname: string): boolean {
   return (PUBLIC_READ_PATHS as readonly string[]).includes(pathname);

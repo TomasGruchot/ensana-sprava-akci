@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Mail, Pencil, Plus, Shield, Trash2 } from "lucide-react";
+import { Copy, KeyRound, Loader2, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -46,7 +46,7 @@ import { Role } from "@/generated/prisma/enums";
 import {
   createUser,
   deleteUser,
-  sendPasswordResetEmail,
+  regenerateActivationCode,
   updateUser,
 } from "@/lib/actions/users";
 import type { GrantInput } from "@/lib/permission-grants";
@@ -122,6 +122,7 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
   const [isDeleting, startDelete] = useTransition();
   const [, startReset] = useTransition();
   const [resettingId, setResettingId] = useState<string | null>(null);
+  const [codeInfo, setCodeInfo] = useState<{ code: string; email: string } | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -133,14 +134,14 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
     setDialogOpen(true);
   }
 
-  function handlePasswordReset(profileId: string) {
+  function handleRegenerateCode(profileId: string) {
     setResettingId(profileId);
     startReset(async () => {
-      const result = await sendPasswordResetEmail(profileId);
-      if (result.success) {
-        toast.success(result.message ?? "E-mail byl odeslán");
+      const result = await regenerateActivationCode(profileId);
+      if (result.success && result.activationCode && result.activationEmail) {
+        setCodeInfo({ code: result.activationCode, email: result.activationEmail });
       } else {
-        toast.error(result.error ?? "Nepodařilo se odeslat e-mail");
+        toast.error(result.error ?? "Nepodařilo se vygenerovat kód");
       }
       setResettingId(null);
     });
@@ -246,9 +247,9 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
                           variant="ghost"
                           size="icon-sm"
                           disabled={locked || resettingId === user.id}
-                          onClick={() => handlePasswordReset(user.id)}
-                          aria-label="Odeslat e-mail pro nastavení hesla"
-                          title="Odeslat odkaz pro nastavení / reset hesla"
+                          onClick={() => handleRegenerateCode(user.id)}
+                          aria-label="Vygenerovat nový aktivační kód"
+                          title="Vygenerovat nový aktivační kód (reset hesla)"
                         >
                           {resettingId === user.id ? (
                             <Loader2 className="w-4 h-4 animate-spin text-zinc-500" />
@@ -293,12 +294,17 @@ export function ItUsersManager({ users, hotels, actor }: ItUsersManagerProps) {
         user={editing}
         hotels={hotels}
         actorRole={actor.role}
-        onSuccess={() => {
+        onSuccess={(payload) => {
           setDialogOpen(false);
           setEditing(null);
+          if (payload?.activationCode && payload.activationEmail) {
+            setCodeInfo({ code: payload.activationCode, email: payload.activationEmail });
+          }
           router.refresh();
         }}
       />
+
+      <ActivationCodeDialog info={codeInfo} onClose={() => setCodeInfo(null)} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <AlertDialogContent>
@@ -330,7 +336,7 @@ interface UserFormDialogProps {
   user: ProfileWithAccess | null;
   hotels: HotelWithRooms[];
   actorRole: Role;
-  onSuccess: () => void;
+  onSuccess: (payload?: { activationCode?: string; activationEmail?: string }) => void;
 }
 
 function UserFormDialog({
@@ -366,10 +372,12 @@ function UserFormDialog({
 
   useEffect(() => {
     if (state.success) {
-      toast.success(
-        state.message ?? (isEdit ? "Účet byl upraven" : "Pozvánka byla odeslána na e-mail"),
+      toast.success(state.message ?? (isEdit ? "Účet byl upraven" : "Účet byl vytvořen"));
+      onSuccess(
+        isEdit
+          ? undefined
+          : { activationCode: state.activationCode, activationEmail: state.activationEmail },
       );
-      onSuccess();
     }
     if (state.error) toast.error(state.error);
   }, [state, isEdit, onSuccess]);
@@ -479,7 +487,7 @@ function UserFormDialog({
           <DialogDescription>
             {isEdit
               ? "Změny rolí a oprávnění se projeví ihned po uložení."
-              : "Po vytvoření přijde na e-mail odkaz pro nastavení hesla a první přihlášení."}
+              : "Po vytvoření se zobrazí aktivační kód, který předáte uživateli pro nastavení hesla."}
           </DialogDescription>
         </DialogHeader>
 
@@ -515,8 +523,9 @@ function UserFormDialog({
 
           {!isEdit ? (
             <p className="text-xs text-zinc-500 flex items-start gap-2 rounded-lg bg-zinc-50 border border-zinc-100 px-3 py-2">
-              <Mail className="w-4 h-4 shrink-0 mt-0.5 text-sky-600" />
-              Heslo si uživatel nastaví sám po kliknutí na odkaz v e-mailu.
+              <KeyRound className="w-4 h-4 shrink-0 mt-0.5 text-sky-600" />
+              Po vytvoření se zobrazí aktivační kód. Uživatel s ním na stránce „Aktivovat účet“
+              zadá e-mail a zvolí si heslo.
             </p>
           ) : null}
 
@@ -645,11 +654,65 @@ function UserFormDialog({
               ) : isEdit ? (
                 "Uložit"
               ) : (
-                "Vytvořit a odeslat pozvánku"
+                "Vytvořit účet"
               )}
             </Button>
           </div>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ActivationCodeDialog({
+  info,
+  onClose,
+}: {
+  info: { code: string; email: string } | null;
+  onClose: () => void;
+}) {
+  async function copyCode() {
+    if (!info) return;
+    try {
+      await navigator.clipboard.writeText(info.code);
+      toast.success("Kód zkopírován do schránky");
+    } catch {
+      toast.error("Kopírování se nezdařilo");
+    }
+  }
+
+  return (
+    <Dialog open={!!info} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-sky-600" />
+            Aktivační kód
+          </DialogTitle>
+          <DialogDescription>
+            Předejte tento kód uživateli{" "}
+            <span className="font-medium text-zinc-700">{info?.email}</span>. Na stránce
+            „Aktivovat účet“ s ním zadá e-mail a zvolí si heslo. Kód platí 14 dní.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          <code className="flex-1 text-center text-lg font-mono font-semibold tracking-widest bg-zinc-50 border border-zinc-200 rounded-lg py-3">
+            {info?.code}
+          </code>
+          <Button type="button" variant="outline" size="icon" onClick={copyCode} aria-label="Kopírovat kód">
+            <Copy className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <p className="text-xs text-zinc-500">
+          Kód se zobrazí jen teď — pokud ho ztratíte, vygenerujte nový tlačítkem s klíčem u
+          uživatele.
+        </p>
+
+        <Button type="button" onClick={onClose} className="w-full">
+          Hotovo
+        </Button>
       </DialogContent>
     </Dialog>
   );

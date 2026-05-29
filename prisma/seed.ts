@@ -1,13 +1,44 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { Role } from "../src/generated/prisma/enums";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 
+async function seedAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.log(
+      "  (přeskočeno) ADMIN_EMAIL / ADMIN_PASSWORD nejsou nastaveny — IT admin nebyl vytvořen.",
+    );
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await prisma.profile.upsert({
+    where: { email },
+    update: { passwordHash, role: Role.IT, activatedAt: new Date() },
+    create: {
+      email,
+      name: "IT Administrátor",
+      role: Role.IT,
+      passwordHash,
+      activatedAt: new Date(),
+    },
+  });
+  console.log(`  ✓ IT admin: ${email}`);
+}
+
 async function main() {
+  console.log("Seeding IT admin...");
+  await seedAdmin();
+
   console.log("Seeding hotels and rooms...");
 
   const hotels = [

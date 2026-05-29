@@ -30,6 +30,10 @@ export type ProfileMinAggregateOutputType = {
   name: string | null
   avatarUrl: string | null
   role: $Enums.Role | null
+  passwordHash: string | null
+  activationCode: string | null
+  activationExpiresAt: Date | null
+  activatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +44,10 @@ export type ProfileMaxAggregateOutputType = {
   name: string | null
   avatarUrl: string | null
   role: $Enums.Role | null
+  passwordHash: string | null
+  activationCode: string | null
+  activationExpiresAt: Date | null
+  activatedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +58,10 @@ export type ProfileCountAggregateOutputType = {
   name: number
   avatarUrl: number
   role: number
+  passwordHash: number
+  activationCode: number
+  activationExpiresAt: number
+  activatedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +74,10 @@ export type ProfileMinAggregateInputType = {
   name?: true
   avatarUrl?: true
   role?: true
+  passwordHash?: true
+  activationCode?: true
+  activationExpiresAt?: true
+  activatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +88,10 @@ export type ProfileMaxAggregateInputType = {
   name?: true
   avatarUrl?: true
   role?: true
+  passwordHash?: true
+  activationCode?: true
+  activationExpiresAt?: true
+  activatedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +102,10 @@ export type ProfileCountAggregateInputType = {
   name?: true
   avatarUrl?: true
   role?: true
+  passwordHash?: true
+  activationCode?: true
+  activationExpiresAt?: true
+  activatedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -165,6 +189,10 @@ export type ProfileGroupByOutputType = {
   name: string | null
   avatarUrl: string | null
   role: $Enums.Role
+  passwordHash: string | null
+  activationCode: string | null
+  activationExpiresAt: Date | null
+  activatedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: ProfileCountAggregateOutputType | null
@@ -196,10 +224,15 @@ export type ProfileWhereInput = {
   name?: Prisma.StringNullableFilter<"Profile"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"Profile"> | string | null
   role?: Prisma.EnumRoleFilter<"Profile"> | $Enums.Role
+  passwordHash?: Prisma.StringNullableFilter<"Profile"> | string | null
+  activationCode?: Prisma.StringNullableFilter<"Profile"> | string | null
+  activationExpiresAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
+  activatedAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   managers?: Prisma.RoomManagerListRelationFilter
   grants?: Prisma.PermissionGrantListRelationFilter
+  sessions?: Prisma.SessionListRelationFilter
 }
 
 export type ProfileOrderByWithRelationInput = {
@@ -208,26 +241,36 @@ export type ProfileOrderByWithRelationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  activationCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  activationExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  activatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   managers?: Prisma.RoomManagerOrderByRelationAggregateInput
   grants?: Prisma.PermissionGrantOrderByRelationAggregateInput
+  sessions?: Prisma.SessionOrderByRelationAggregateInput
 }
 
 export type ProfileWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   email?: string
+  activationCode?: string
   AND?: Prisma.ProfileWhereInput | Prisma.ProfileWhereInput[]
   OR?: Prisma.ProfileWhereInput[]
   NOT?: Prisma.ProfileWhereInput | Prisma.ProfileWhereInput[]
   name?: Prisma.StringNullableFilter<"Profile"> | string | null
   avatarUrl?: Prisma.StringNullableFilter<"Profile"> | string | null
   role?: Prisma.EnumRoleFilter<"Profile"> | $Enums.Role
+  passwordHash?: Prisma.StringNullableFilter<"Profile"> | string | null
+  activationExpiresAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
+  activatedAt?: Prisma.DateTimeNullableFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Profile"> | Date | string
   managers?: Prisma.RoomManagerListRelationFilter
   grants?: Prisma.PermissionGrantListRelationFilter
-}, "id" | "email">
+  sessions?: Prisma.SessionListRelationFilter
+}, "id" | "email" | "activationCode">
 
 export type ProfileOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -235,6 +278,10 @@ export type ProfileOrderByWithAggregationInput = {
   name?: Prisma.SortOrderInput | Prisma.SortOrder
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  activationCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  activationExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  activatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProfileCountOrderByAggregateInput
@@ -251,32 +298,46 @@ export type ProfileScalarWhereWithAggregatesInput = {
   name?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
   role?: Prisma.EnumRoleWithAggregatesFilter<"Profile"> | $Enums.Role
+  passwordHash?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  activationCode?: Prisma.StringNullableWithAggregatesFilter<"Profile"> | string | null
+  activationExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Profile"> | Date | string | null
+  activatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Profile"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Profile"> | Date | string
 }
 
 export type ProfileCreateInput = {
-  id: string
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   managers?: Prisma.RoomManagerCreateNestedManyWithoutProfileInput
   grants?: Prisma.PermissionGrantCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutProfileInput
 }
 
 export type ProfileUncheckedCreateInput = {
-  id: string
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   managers?: Prisma.RoomManagerUncheckedCreateNestedManyWithoutProfileInput
   grants?: Prisma.PermissionGrantUncheckedCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfileUpdateInput = {
@@ -285,10 +346,15 @@ export type ProfileUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   managers?: Prisma.RoomManagerUpdateManyWithoutProfileNestedInput
   grants?: Prisma.PermissionGrantUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfileUncheckedUpdateInput = {
@@ -297,18 +363,27 @@ export type ProfileUncheckedUpdateInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   managers?: Prisma.RoomManagerUncheckedUpdateManyWithoutProfileNestedInput
   grants?: Prisma.PermissionGrantUncheckedUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfileCreateManyInput = {
-  id: string
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -319,6 +394,10 @@ export type ProfileUpdateManyMutationInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -329,6 +408,10 @@ export type ProfileUncheckedUpdateManyInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -339,6 +422,10 @@ export type ProfileCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
+  activationCode?: Prisma.SortOrder
+  activationExpiresAt?: Prisma.SortOrder
+  activatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -349,6 +436,10 @@ export type ProfileMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
+  activationCode?: Prisma.SortOrder
+  activationExpiresAt?: Prisma.SortOrder
+  activatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -359,6 +450,10 @@ export type ProfileMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   avatarUrl?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  passwordHash?: Prisma.SortOrder
+  activationCode?: Prisma.SortOrder
+  activationExpiresAt?: Prisma.SortOrder
+  activatedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -370,6 +465,20 @@ export type ProfileScalarRelationFilter = {
 
 export type EnumRoleFieldUpdateOperationsInput = {
   set?: $Enums.Role
+}
+
+export type ProfileCreateNestedOneWithoutSessionsInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutSessionsInput, Prisma.ProfileUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutSessionsInput
+  connect?: Prisma.ProfileWhereUniqueInput
+}
+
+export type ProfileUpdateOneRequiredWithoutSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProfileCreateWithoutSessionsInput, Prisma.ProfileUncheckedCreateWithoutSessionsInput>
+  connectOrCreate?: Prisma.ProfileCreateOrConnectWithoutSessionsInput
+  upsert?: Prisma.ProfileUpsertWithoutSessionsInput
+  connect?: Prisma.ProfileWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileUpdateToOneWithWhereWithoutSessionsInput, Prisma.ProfileUpdateWithoutSessionsInput>, Prisma.ProfileUncheckedUpdateWithoutSessionsInput>
 }
 
 export type ProfileCreateNestedOneWithoutGrantsInput = {
@@ -400,26 +509,116 @@ export type ProfileUpdateOneRequiredWithoutManagersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProfileUpdateToOneWithWhereWithoutManagersInput, Prisma.ProfileUpdateWithoutManagersInput>, Prisma.ProfileUncheckedUpdateWithoutManagersInput>
 }
 
-export type ProfileCreateWithoutGrantsInput = {
-  id: string
+export type ProfileCreateWithoutSessionsInput = {
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   managers?: Prisma.RoomManagerCreateNestedManyWithoutProfileInput
+  grants?: Prisma.PermissionGrantCreateNestedManyWithoutProfileInput
 }
 
-export type ProfileUncheckedCreateWithoutGrantsInput = {
-  id: string
+export type ProfileUncheckedCreateWithoutSessionsInput = {
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   managers?: Prisma.RoomManagerUncheckedCreateNestedManyWithoutProfileInput
+  grants?: Prisma.PermissionGrantUncheckedCreateNestedManyWithoutProfileInput
+}
+
+export type ProfileCreateOrConnectWithoutSessionsInput = {
+  where: Prisma.ProfileWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutSessionsInput, Prisma.ProfileUncheckedCreateWithoutSessionsInput>
+}
+
+export type ProfileUpsertWithoutSessionsInput = {
+  update: Prisma.XOR<Prisma.ProfileUpdateWithoutSessionsInput, Prisma.ProfileUncheckedUpdateWithoutSessionsInput>
+  create: Prisma.XOR<Prisma.ProfileCreateWithoutSessionsInput, Prisma.ProfileUncheckedCreateWithoutSessionsInput>
+  where?: Prisma.ProfileWhereInput
+}
+
+export type ProfileUpdateToOneWithWhereWithoutSessionsInput = {
+  where?: Prisma.ProfileWhereInput
+  data: Prisma.XOR<Prisma.ProfileUpdateWithoutSessionsInput, Prisma.ProfileUncheckedUpdateWithoutSessionsInput>
+}
+
+export type ProfileUpdateWithoutSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  managers?: Prisma.RoomManagerUpdateManyWithoutProfileNestedInput
+  grants?: Prisma.PermissionGrantUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfileUncheckedUpdateWithoutSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  managers?: Prisma.RoomManagerUncheckedUpdateManyWithoutProfileNestedInput
+  grants?: Prisma.PermissionGrantUncheckedUpdateManyWithoutProfileNestedInput
+}
+
+export type ProfileCreateWithoutGrantsInput = {
+  id?: string
+  email: string
+  name?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  managers?: Prisma.RoomManagerCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutProfileInput
+}
+
+export type ProfileUncheckedCreateWithoutGrantsInput = {
+  id?: string
+  email: string
+  name?: string | null
+  avatarUrl?: string | null
+  role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  managers?: Prisma.RoomManagerUncheckedCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfileCreateOrConnectWithoutGrantsInput = {
@@ -444,9 +643,14 @@ export type ProfileUpdateWithoutGrantsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   managers?: Prisma.RoomManagerUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfileUncheckedUpdateWithoutGrantsInput = {
@@ -455,31 +659,46 @@ export type ProfileUncheckedUpdateWithoutGrantsInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   managers?: Prisma.RoomManagerUncheckedUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfileCreateWithoutManagersInput = {
-  id: string
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   grants?: Prisma.PermissionGrantCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutProfileInput
 }
 
 export type ProfileUncheckedCreateWithoutManagersInput = {
-  id: string
+  id?: string
   email: string
   name?: string | null
   avatarUrl?: string | null
   role?: $Enums.Role
+  passwordHash?: string | null
+  activationCode?: string | null
+  activationExpiresAt?: Date | string | null
+  activatedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   grants?: Prisma.PermissionGrantUncheckedCreateNestedManyWithoutProfileInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutProfileInput
 }
 
 export type ProfileCreateOrConnectWithoutManagersInput = {
@@ -504,9 +723,14 @@ export type ProfileUpdateWithoutManagersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grants?: Prisma.PermissionGrantUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutProfileNestedInput
 }
 
 export type ProfileUncheckedUpdateWithoutManagersInput = {
@@ -515,9 +739,14 @@ export type ProfileUncheckedUpdateWithoutManagersInput = {
   name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  activationExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  activatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grants?: Prisma.PermissionGrantUncheckedUpdateManyWithoutProfileNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutProfileNestedInput
 }
 
 
@@ -528,11 +757,13 @@ export type ProfileUncheckedUpdateWithoutManagersInput = {
 export type ProfileCountOutputType = {
   managers: number
   grants: number
+  sessions: number
 }
 
 export type ProfileCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   managers?: boolean | ProfileCountOutputTypeCountManagersArgs
   grants?: boolean | ProfileCountOutputTypeCountGrantsArgs
+  sessions?: boolean | ProfileCountOutputTypeCountSessionsArgs
 }
 
 /**
@@ -559,6 +790,13 @@ export type ProfileCountOutputTypeCountGrantsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.PermissionGrantWhereInput
 }
 
+/**
+ * ProfileCountOutputType without action
+ */
+export type ProfileCountOutputTypeCountSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SessionWhereInput
+}
+
 
 export type ProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -566,10 +804,15 @@ export type ProfileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name?: boolean
   avatarUrl?: boolean
   role?: boolean
+  passwordHash?: boolean
+  activationCode?: boolean
+  activationExpiresAt?: boolean
+  activatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   managers?: boolean | Prisma.Profile$managersArgs<ExtArgs>
   grants?: boolean | Prisma.Profile$grantsArgs<ExtArgs>
+  sessions?: boolean | Prisma.Profile$sessionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["profile"]>
 
@@ -579,6 +822,10 @@ export type ProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   avatarUrl?: boolean
   role?: boolean
+  passwordHash?: boolean
+  activationCode?: boolean
+  activationExpiresAt?: boolean
+  activatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["profile"]>
@@ -589,6 +836,10 @@ export type ProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   name?: boolean
   avatarUrl?: boolean
   role?: boolean
+  passwordHash?: boolean
+  activationCode?: boolean
+  activationExpiresAt?: boolean
+  activatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["profile"]>
@@ -599,14 +850,19 @@ export type ProfileSelectScalar = {
   name?: boolean
   avatarUrl?: boolean
   role?: boolean
+  passwordHash?: boolean
+  activationCode?: boolean
+  activationExpiresAt?: boolean
+  activatedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "avatarUrl" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["profile"]>
+export type ProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "avatarUrl" | "role" | "passwordHash" | "activationCode" | "activationExpiresAt" | "activatedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["profile"]>
 export type ProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   managers?: boolean | Prisma.Profile$managersArgs<ExtArgs>
   grants?: boolean | Prisma.Profile$grantsArgs<ExtArgs>
+  sessions?: boolean | Prisma.Profile$sessionsArgs<ExtArgs>
   _count?: boolean | Prisma.ProfileCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProfileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -617,6 +873,7 @@ export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   objects: {
     managers: Prisma.$RoomManagerPayload<ExtArgs>[]
     grants: Prisma.$PermissionGrantPayload<ExtArgs>[]
+    sessions: Prisma.$SessionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -624,6 +881,10 @@ export type $ProfilePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     name: string | null
     avatarUrl: string | null
     role: $Enums.Role
+    passwordHash: string | null
+    activationCode: string | null
+    activationExpiresAt: Date | null
+    activatedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["profile"]>
@@ -1022,6 +1283,7 @@ export interface Prisma__ProfileClient<T, Null = never, ExtArgs extends runtime.
   readonly [Symbol.toStringTag]: "PrismaPromise"
   managers<T extends Prisma.Profile$managersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$managersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoomManagerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   grants<T extends Prisma.Profile$grantsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$grantsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PermissionGrantPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sessions<T extends Prisma.Profile$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Profile$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1056,6 +1318,10 @@ export interface ProfileFieldRefs {
   readonly name: Prisma.FieldRef<"Profile", 'String'>
   readonly avatarUrl: Prisma.FieldRef<"Profile", 'String'>
   readonly role: Prisma.FieldRef<"Profile", 'Role'>
+  readonly passwordHash: Prisma.FieldRef<"Profile", 'String'>
+  readonly activationCode: Prisma.FieldRef<"Profile", 'String'>
+  readonly activationExpiresAt: Prisma.FieldRef<"Profile", 'DateTime'>
+  readonly activatedAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Profile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Profile", 'DateTime'>
 }
@@ -1496,6 +1762,30 @@ export type Profile$grantsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.PermissionGrantScalarFieldEnum | Prisma.PermissionGrantScalarFieldEnum[]
+}
+
+/**
+ * Profile.sessions
+ */
+export type Profile$sessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Session
+   */
+  select?: Prisma.SessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Session
+   */
+  omit?: Prisma.SessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SessionInclude<ExtArgs> | null
+  where?: Prisma.SessionWhereInput
+  orderBy?: Prisma.SessionOrderByWithRelationInput | Prisma.SessionOrderByWithRelationInput[]
+  cursor?: Prisma.SessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SessionScalarFieldEnum | Prisma.SessionScalarFieldEnum[]
 }
 
 /**

@@ -36,10 +36,12 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
-docker/supabase/.env
-docker/supabase/volumes/api/kong.yml
+docker/postgres/.env
 !.env.example
 !**/.env*.example
+
+# nahrané soubory (lokální úložiště)
+/uploads
 
 # vercel
 .vercel

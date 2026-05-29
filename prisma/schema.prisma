@@ -59,15 +59,32 @@ model Event {
 }
 
 model Profile {
-  id        String             @id
-  email     String             @unique
-  name      String?
-  avatarUrl String?
-  role      Role               @default(USER)
-  managers  RoomManager[]
-  grants    PermissionGrant[]
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id                  String            @id @default(cuid())
+  email               String            @unique
+  name                String?
+  avatarUrl           String?
+  role                Role              @default(USER)
+  passwordHash        String?
+  activationCode      String?           @unique
+  activationExpiresAt DateTime?
+  activatedAt         DateTime?
+  managers            RoomManager[]
+  grants              PermissionGrant[]
+  sessions            Session[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+/// Přihlašovací relace — token uložený v podepsané cookie, ověřovaný proti DB.
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
 }
 
 enum Role {

@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
         hostname: "r2.ensana-media.twodo.cz",
         pathname: "/**",
       },
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
     ],
   },
 };

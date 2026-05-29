@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { Role } from "@/generated/prisma/enums";
@@ -12,30 +13,31 @@ import {
   type ProfileWithGrants,
 } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionProfileId } from "@/lib/session";
 import type { Profile } from "@/types";
 
-export async function getSessionProfile(): Promise<Profile | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+export const getSessionProfile = cache(async (): Promise<Profile | null> => {
+  const profileId = await getSessionProfileId();
+  if (!profileId) return null;
+  return prisma.profile.findUnique({ where: { id: profileId } });
+});
 
-  return prisma.profile.findUnique({ where: { id: user.id } });
-}
+export const getSessionProfileWithGrants = cache(
+  async (): Promise<ProfileWithGrants | null> => {
+    const profileId = await getSessionProfileId();
+    if (!profileId) return null;
+    return prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { grants: true },
+    });
+  },
+);
 
-export async function getSessionProfileWithGrants(): Promise<ProfileWithGrants | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  return prisma.profile.findUnique({
-    where: { id: user.id },
-    include: { grants: true },
-  });
+/** Vrátí přihlášený profil, nebo vyhodí chybu (pro server actions s uploads apod.). */
+export async function requireSessionProfile(): Promise<Profile> {
+  const profile = await getSessionProfile();
+  if (!profile) throw new Error("Nejste přihlášeni");
+  return profile;
 }
 
 export async function requireAdminProfile(): Promise<Profile> {

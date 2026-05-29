@@ -3,30 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { assertHotelPermission } from "@/lib/permissions-server";
+import { assertHotelPermission, requireSessionProfile } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { saveFile } from "@/lib/storage";
 import { getActorInfo, logAudit } from "@/lib/audit";
 import type { ActionState } from "@/types";
 
-const BUCKET = "hotel-images";
-
-async function ensureBucket() {
-  const admin = createAdminClient();
-  const { data: buckets } = await admin.storage.listBuckets();
-  if (!buckets?.some((b) => b.name === BUCKET)) {
-    await admin.storage.createBucket(BUCKET, { public: true });
-  }
-}
-
 async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Nejste přihlášeni");
-  return user;
+  return requireSessionProfile();
 }
 
 export async function uploadHotelImage(
@@ -41,28 +25,10 @@ export async function uploadHotelImage(
   const file = formData.get("image") as File | null;
   if (!file || file.size === 0) return { error: "Žádný soubor" };
 
-  try {
-    await ensureBucket();
-  } catch {
-    /* bucket mohl být již vytvořen */
-  }
-
-  const admin = createAdminClient();
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
   const buffer = Buffer.from(await file.arrayBuffer());
+  const saved = await saveFile("hotel-images", buffer, `${Date.now()}.webp`);
 
-  const { error } = await admin.storage.from(BUCKET).upload(path, buffer, {
-    contentType: "image/webp",
-    upsert: true,
-  });
-
-  if (error) return { error: error.message };
-
-  const {
-    data: { publicUrl },
-  } = admin.storage.from(BUCKET).getPublicUrl(path);
-
-  return { url: publicUrl };
+  return { url: saved.url };
 }
 
 const HotelSchema = z.object({

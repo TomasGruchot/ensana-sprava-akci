@@ -38,6 +38,11 @@ export type Event = Prisma.EventModel
  */
 export type Profile = Prisma.ProfileModel
 /**
+ * Model Session
+ * Přihlašovací relace — token uložený v podepsané cookie, ověřovaný proti DB.
+ */
+export type Session = Prisma.SessionModel
+/**
  * Model PermissionGrant
  * Granulární oprávnění pro hotel nebo konkrétní místnost (roomId null = celý hotel).
  */

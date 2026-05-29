@@ -18,9 +18,7 @@ import {
   requireItProfile,
 } from "@/lib/permissions-server";
 import { dedupeGrants, parseGrantsJson } from "@/lib/permission-grants";
-import { buildAuthCallbackUrl } from "@/lib/auth-url";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { generateActivationCode, activationExpiry } from "@/lib/activation";
 import { logAudit } from "@/lib/audit";
 import type { ActionState, ProfileWithAccess } from "@/types";
 
@@ -179,33 +177,27 @@ export async function createUser(
   const roleErr = validateRoleChange(actor!.role, role, actor!.id, "");
   if (roleErr) return roleErr;
 
-  const { email, name } = parsed.data;
-  const admin = createAdminClient();
-  const redirectTo = buildAuthCallbackUrl("/nastavit-heslo");
+  const email = parsed.data.email.trim().toLowerCase();
+  const { name } = parsed.data;
 
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-    data: { name, full_name: name },
-  });
-
-  if (error || !data.user) {
-    const msg = error?.message?.toLowerCase() ?? "";
-    if (msg.includes("already") || msg.includes("registered")) {
-      return { error: "Uživatel s tímto e-mailem již existuje" };
-    }
-    return { error: error?.message ?? "Nepodařilo se odeslat pozvánku" };
+  const existing = await prisma.profile.findUnique({ where: { email } });
+  if (existing) {
+    return { error: "Uživatel s tímto e-mailem již existuje" };
   }
 
-  await prisma.profile.create({
+  const activationCode = generateActivationCode();
+
+  const created = await prisma.profile.create({
     data: {
-      id: data.user.id,
       email,
       name,
       role,
+      activationCode,
+      activationExpiresAt: activationExpiry(),
     },
   });
 
-  await syncPermissionGrants(data.user.id, role, parsed.data.grantsJson);
+  await syncPermissionGrants(created.id, role, parsed.data.grantsJson);
 
   await logAudit({
     actorId: actor!.id,
@@ -213,17 +205,23 @@ export async function createUser(
     actorName: actor!.name ?? null,
     action: "USER_CREATE",
     entityType: "user",
-    entityId: data.user.id,
+    entityId: created.id,
     entityLabel: `${name} (${email})`,
     after: { email, name, role },
   });
 
   revalidatePath("/it");
   revalidatePath("/uzivatele");
-  return { success: true, message: "Pozvánka byla odeslána na e-mail" };
+  return {
+    success: true,
+    message: "Účet vytvořen. Předejte uživateli aktivační kód.",
+    activationCode,
+    activationEmail: email,
+  };
 }
 
-export async function sendPasswordResetEmail(profileId: string): Promise<ActionState> {
+/** Vygeneruje nový aktivační kód (např. při zapomenutém hesle). */
+export async function regenerateActivationCode(profileId: string): Promise<ActionState> {
   const check = await assertAccountManager();
   if (isActionError(check)) return check;
   const { actor } = check;
@@ -231,14 +229,14 @@ export async function sendPasswordResetEmail(profileId: string): Promise<ActionS
   const target = await prisma.profile.findUnique({ where: { id: profileId } });
   if (!target) return { error: "Uživatel nenalezen" };
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(target.email, {
-    redirectTo: buildAuthCallbackUrl("/nastavit-heslo"),
+  const activationCode = generateActivationCode();
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: {
+      activationCode,
+      activationExpiresAt: activationExpiry(),
+    },
   });
-
-  if (error) {
-    return { error: error.message ?? "Nepodařilo se odeslat e-mail" };
-  }
 
   await logAudit({
     actorId: actor!.id,
@@ -251,7 +249,12 @@ export async function sendPasswordResetEmail(profileId: string): Promise<ActionS
     metadata: { targetEmail: target.email },
   });
 
-  return { success: true, message: "E-mail pro nastavení hesla byl odeslán" };
+  return {
+    success: true,
+    message: "Nový aktivační kód byl vygenerován.",
+    activationCode,
+    activationEmail: target.email,
+  };
 }
 
 export async function updateUser(
@@ -287,11 +290,6 @@ export async function updateUser(
     data: { name, role },
   });
 
-  const admin = createAdminClient();
-  await admin.auth.admin.updateUserById(profileId, {
-    user_metadata: { name, full_name: name },
-  });
-
   await syncPermissionGrants(profileId, role, parsed.data.grantsJson);
 
   await logAudit({
@@ -322,12 +320,6 @@ export async function deleteUser(profileId: string): Promise<ActionState> {
 
   const target = await prisma.profile.findUnique({ where: { id: profileId } });
   if (!target) return { error: "Uživatel nenalezen" };
-
-  const admin = createAdminClient();
-  const { error } = await admin.auth.admin.deleteUser(profileId);
-  if (error) {
-    return { error: error.message ?? "Nepodařilo se smazat uživatele" };
-  }
 
   await prisma.profile.delete({ where: { id: profileId } });
 

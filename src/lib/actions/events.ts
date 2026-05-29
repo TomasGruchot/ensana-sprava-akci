@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { parseInputDate } from "@/lib/date";
-import { assertEventPermission } from "@/lib/permissions-server";
+import { assertEventPermission, getSessionProfile } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { deleteFile, saveFile } from "@/lib/storage";
 import { getActorInfo, logAudit } from "@/lib/audit";
 import type { ActionState } from "@/types";
 
@@ -25,7 +24,6 @@ function parseRoomIds(formData: FormData): string[] {
   ];
 }
 
-const ATTACHMENT_BUCKET = "event-attachments";
 const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024;
 
 type UploadedAttachment = {
@@ -35,14 +33,6 @@ type UploadedAttachment = {
   mimeType: string | null;
   size: number;
 };
-
-async function ensureAttachmentBucket() {
-  const admin = createAdminClient();
-  const { data: buckets } = await admin.storage.listBuckets();
-  if (!buckets?.some((bucket) => bucket.name === ATTACHMENT_BUCKET)) {
-    await admin.storage.createBucket(ATTACHMENT_BUCKET, { public: true });
-  }
-}
 
 function getAttachmentFile(formData: FormData): File | null {
   const value = formData.get("attachment");
@@ -82,33 +72,17 @@ async function uploadEventAttachment(
     return { error: "Příloha může mít maximálně 25 MB" };
   }
 
-  try {
-    await ensureAttachmentBucket();
-  } catch {
-    /* bucket mohl být již vytvořen */
-  }
-
-  const admin = createAdminClient();
   const safeName = sanitizeAttachmentName(file.name || "soubor");
-  const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, buffer, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
-
-  if (error) return { error: error.message };
-
-  const {
-    data: { publicUrl },
-  } = admin.storage.from(ATTACHMENT_BUCKET).getPublicUrl(path);
+  const saved = await saveFile("event-attachments", buffer, fileName, userId);
 
   return {
     data: {
       name: file.name || safeName,
-      path,
-      url: publicUrl,
+      path: saved.path,
+      url: saved.url,
       mimeType: file.type || null,
       size: file.size,
     },
@@ -116,8 +90,7 @@ async function uploadEventAttachment(
 }
 
 async function cleanupUploadedAttachment(path: string) {
-  const admin = createAdminClient();
-  await admin.storage.from(ATTACHMENT_BUCKET).remove([path]);
+  await deleteFile(path);
 }
 
 async function removeAttachmentIfUnused(path: string) {
@@ -126,8 +99,7 @@ async function removeAttachmentIfUnused(path: string) {
   });
   if (usageCount > 0) return;
 
-  const admin = createAdminClient();
-  await admin.storage.from(ATTACHMENT_BUCKET).remove([path]);
+  await deleteFile(path);
 }
 
 const EventSchema = z
@@ -208,10 +180,7 @@ export async function createEvent(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionProfile();
   if (!user) return { error: "Nejste přihlášeni" };
 
   const raw = {
@@ -334,10 +303,7 @@ export async function updateEvent(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionProfile();
   if (!user) return { error: "Nejste přihlášeni" };
 
   const existing = await prisma.event.findUnique({
@@ -545,10 +511,7 @@ export async function updateEvent(
 }
 
 export async function deleteEvent(id: string): Promise<ActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionProfile();
   if (!user) return { error: "Nejste přihlášeni" };
 
   const existing = await prisma.event.findUnique({
